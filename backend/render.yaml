@@ -19,5 +19,3 @@ services:
       - key: DJANGO_SETTINGS_MODULE
         value: project.settings
 
-    aptPackages:
-      - ffmpeg
