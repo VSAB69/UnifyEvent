@@ -71,26 +71,30 @@ export default function ParentEventEventsPage() {
   }, [parentId]);
 
   /* ─────────────────────────────────────────────
-     FETCH SIGNED IMAGE URLS (FIXED)
+     FETCH SIGNED IMAGE URLS — ESLINT CLEAN
   ───────────────────────────────────────────── */
   useEffect(() => {
     events.forEach((ev) => {
-      // ✅ MUST use image_key
       if (!ev.image_key) return;
 
-      // already fetched
-      if (imageUrls[ev.id]) return;
+      setImageUrls((prev) => {
+        // Already fetched → do nothing
+        if (prev[ev.id]) return prev;
 
-      ParticipantService.getEventImageSignedUrl(ev.image_key)
-        .then((res) => {
-          setImageUrls((prev) => ({
-            ...prev,
-            [ev.id]: res.data.url,
-          }));
-        })
-        .catch(() => {});
+        // Fetch signed URL only once
+        ParticipantService.getEventImageSignedUrl(ev.image_key)
+          .then((res) => {
+            setImageUrls((p) => ({
+              ...p,
+              [ev.id]: res.data.url,
+            }));
+          })
+          .catch(() => {});
+
+        return prev;
+      });
     });
-  }, [events]); // ✅ DO NOT include imageUrls
+  }, [events]);
 
   const requireLogin = () => {
     if (loading) return false;
@@ -99,7 +103,7 @@ export default function ParentEventEventsPage() {
   };
 
   /* ─────────────────────────────────────────────
-     BOOKING FLOW (UNCHANGED)
+     BOOKING FLOW
   ───────────────────────────────────────────── */
   const startAddToCart = async (ev) => {
     if (!requireLogin()) return;
@@ -271,6 +275,7 @@ export default function ParentEventEventsPage() {
         fetchSlots={(id) => ParticipantService.getEventSlots(id)}
       />
 
+      {/* Toast */}
       <AnimatePresence>
         {alert.open && (
           <motion.div className="fixed bottom-6 right-6 px-5 py-3 rounded-xl text-white bg-black">

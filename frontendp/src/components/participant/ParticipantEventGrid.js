@@ -26,7 +26,6 @@ export default function ParticipantEventGrid() {
   const [constraint, setConstraint] = useState(null);
   const [participantsCount, setParticipantsCount] = useState(1);
   const [participantsData, setParticipantsData] = useState([]);
-  const [pickedSlot, setPickedSlot] = useState(null);
 
   // Modals
   const [openCount, setOpenCount] = useState(false);
@@ -67,7 +66,6 @@ export default function ParticipantEventGrid() {
 
     setActiveEvent(event);
     setParticipantsData([]);
-    setPickedSlot(null);
 
     let c = null;
     if (event.constraint_id) {
@@ -111,7 +109,6 @@ export default function ParticipantEventGrid() {
   };
 
   const handleSlotPicked = async (slot) => {
-    setPickedSlot(slot);
     setOpenSlot(false);
 
     try {
@@ -145,12 +142,11 @@ export default function ParticipantEventGrid() {
         severity: "success",
       });
 
-      // Reset
+      // Reset flow
       setActiveEvent(null);
       setConstraint(null);
       setParticipantsCount(1);
       setParticipantsData([]);
-      setPickedSlot(null);
     } catch (err) {
       console.error(err);
       setAlert({
@@ -162,6 +158,8 @@ export default function ParticipantEventGrid() {
   };
 
   return (
+    // ---- rest of your JSX unchanged ----
+
     <div className="p-6 max-w-7xl mx-auto">
       {/* Title */}
       <motion.h1

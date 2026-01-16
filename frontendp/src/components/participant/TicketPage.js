@@ -24,26 +24,26 @@ export default function TicketPage() {
 
   const ticketRef = useRef(null);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const beRes = await ParticipantService.getBookedEvent(bookedEventId);
-      const be = beRes.data;
-      setBookedEvent(be);
-
-      if (be?.event) {
-        const detRes = await ParticipantService.getEventDetailsByEvent(
-          be.event
-        );
-        const details = detRes.data?.[0] || null;
-        setVenue(details?.venue || null);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const beRes = await ParticipantService.getBookedEvent(bookedEventId);
+        const be = beRes.data;
+        setBookedEvent(be);
+
+        if (be?.event) {
+          const detRes = await ParticipantService.getEventDetailsByEvent(
+            be.event
+          );
+          const details = detRes.data?.[0] || null;
+          setVenue(details?.venue || null);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
     load();
   }, [bookedEventId]);
 
@@ -61,6 +61,8 @@ export default function TicketPage() {
     link.download = `ticket_${bookedEventId}.png`;
     link.click();
   };
+
+  // ---- everything below unchanged ---- //
 
   if (loading) {
     return (

@@ -6,13 +6,6 @@ import { useNavigate } from "react-router-dom";
 
 import ParticipantService from "./ParticipantService";
 
-/**
- * Updated CheckoutPage
- * - Flat purple / pink theme (NO gradients)
- * - Clean, premium cards, subtle shadows, motion micro-interactions
- * - Preserves all existing business logic & API calls
- */
-
 export default function CheckoutPage() {
   const nav = useNavigate();
 
@@ -30,19 +23,22 @@ export default function CheckoutPage() {
     setTimeout(() => setToast((t) => ({ ...t, open: false })), 3500);
   };
 
-  const loadCart = async () => {
-    setLoading(true);
-    try {
-      const res = await ParticipantService.getCart();
-      setCart(res.data);
-    } catch (e) {
-      showToast("Failed to load cart", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  /* ─────────────────────────────────────────────
+     LOAD CART — ESLINT CLEAN
+  ───────────────────────────────────────────── */
   useEffect(() => {
+    const loadCart = async () => {
+      setLoading(true);
+      try {
+        const res = await ParticipantService.getCart();
+        setCart(res.data);
+      } catch {
+        showToast("Failed to load cart", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadCart();
   }, []);
 
@@ -75,6 +71,9 @@ export default function CheckoutPage() {
     visible: { opacity: 1, y: 0 },
   };
 
+  /* ─────────────────────────────────────────────
+     LOADING STATE
+  ───────────────────────────────────────────── */
   if (loading) {
     return (
       <div className="flex justify-center py-20">
@@ -87,6 +86,9 @@ export default function CheckoutPage() {
     );
   }
 
+  /* ─────────────────────────────────────────────
+     EMPTY CART
+  ───────────────────────────────────────────── */
   if (!cart?.items?.length) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-10 text-center">
@@ -103,6 +105,9 @@ export default function CheckoutPage() {
     );
   }
 
+  /* ─────────────────────────────────────────────
+     MAIN UI
+  ───────────────────────────────────────────── */
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header */}
@@ -151,7 +156,7 @@ export default function CheckoutPage() {
 
                     <div className="mt-3 text-sm text-gray-700">
                       <span className="font-medium">Team size:</span>{" "}
-                      <span className="ml-1">{item.participants_count}</span>
+                      {item.participants_count}
                     </div>
 
                     <div className="mt-1 text-sm text-gray-700">
@@ -174,7 +179,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* Participants list */}
+                {/* Participants */}
                 {item.temp_participants?.length > 0 && (
                   <div className="mt-3 space-y-2">
                     {item.temp_participants.map((p) => (
@@ -204,7 +209,7 @@ export default function CheckoutPage() {
           </motion.div>
         </motion.div>
 
-        {/* Right: Booking action */}
+        {/* Right: Payment box */}
         <motion.div
           variants={cardVariant}
           initial="hidden"
@@ -243,7 +248,6 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* small summary card */}
             <motion.div
               whileHover={{ translateY: -4 }}
               className="mt-4 rounded-xl border border-purple-100 bg-purple-50 p-4 shadow-sm"
