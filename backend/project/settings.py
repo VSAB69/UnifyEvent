@@ -103,11 +103,11 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://hitansh.pages.dev",
+    "https://unifyevents.pages.dev",
 ]
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://.*\.hitansh\.pages\.dev$",
+    "https://unifyevents.pages.dev"
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -153,9 +153,8 @@ SIMPLE_JWT = {
 
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://hitansh.pages.dev",
-    "https://*.hitansh.pages.dev",
     "https://unifyevents-ykp4.onrender.com",
+    "https://unifyevents.pages.dev"
 ]
 
 CSRF_COOKIE_SECURE = True
