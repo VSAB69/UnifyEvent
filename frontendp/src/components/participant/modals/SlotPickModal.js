@@ -14,14 +14,17 @@ export default function SlotPickModal({
   const [selectedId, setSelectedId] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // Extract eventId to avoid ESLint dependency warning
+  const eventId = event?.id;
+
   useEffect(() => {
-    if (!open || !event) return;
+    if (!open || !eventId) return;
 
     const load = async () => {
       setLoading(true);
       setSelectedId(null);
       try {
-        const res = await fetchSlots(event.id);
+        const res = await fetchSlots(eventId);
         setSlots(res.data || []);
       } finally {
         setLoading(false);
@@ -29,7 +32,7 @@ export default function SlotPickModal({
     };
 
     load();
-  }, [open, event?.id, fetchSlots]);
+  }, [open, eventId, fetchSlots]);
 
   if (!open) return null;
 
@@ -88,7 +91,7 @@ export default function SlotPickModal({
                   s.unlimited_participants ||
                   (s.available_participants ?? 0) >= participantsCount;
 
-                const selected = String(s.id) === String(selectedId);
+                const isSelected = String(s.id) === String(selectedId);
 
                 return (
                   <motion.button
@@ -100,7 +103,7 @@ export default function SlotPickModal({
                     }
                     className={`text-left p-4 rounded-xl border transition-all
                       ${
-                        selected
+                        isSelected
                           ? "border-purple-600 ring-2 ring-purple-200 bg-purple-50"
                           : "border-gray-200 bg-white"
                       }

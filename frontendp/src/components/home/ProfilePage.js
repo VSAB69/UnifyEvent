@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { User, Mail, BadgeCheck, Save } from "lucide-react";
 import { useAuth } from "../../context/useAuth";
-import ParticipantService from "../participant/ParticipantService"; // optional if you want updates
 
 export default function ProfilePage() {
   const { user } = useAuth();

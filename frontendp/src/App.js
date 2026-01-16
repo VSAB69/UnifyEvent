@@ -9,7 +9,6 @@ import {
 import { AuthProvider } from "./context/useAuth";
 import PrivateRoute from "./components/private_route";
 import ProfilePage from "./components/home/ProfilePage";
-import AdminBookingsPage from "./components/admin/AdminBookingsPage";
 
 import AdminCheckInPage from "./components/admin/AdminCheckInPage";
 

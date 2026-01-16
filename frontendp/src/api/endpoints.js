@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:8000";
+const BASE_URL = "https://unifyevents-ykp4.onrender.com";
 
 // ─────────────────────────────
 // AUTH CLIENT (no interceptor)

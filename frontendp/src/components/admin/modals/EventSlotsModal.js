@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Plus, Edit, Trash2, Calendar, Clock, Users } from "lucide-react";
+import { X, Plus, Edit, Trash2, Calendar, Clock } from "lucide-react";
 import EventService from "../EventService";
 import EventSlotModal from "./EventSlotModal";
 
@@ -16,7 +16,7 @@ export default function EventSlotsListModal({
   const [slotModalOpen, setSlotModalOpen] = useState(false);
   const [slotIdToEdit, setSlotIdToEdit] = useState(null);
 
-  const fetchSlots = async () => {
+  const fetchSlots = useCallback(async () => {
     if (!eventId) return;
     setLoading(true);
     try {
@@ -25,11 +25,11 @@ export default function EventSlotsListModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventId]);
 
   useEffect(() => {
     if (open) fetchSlots();
-  }, [open, eventId]);
+  }, [open, fetchSlots]);
 
   if (!open) return null;
 

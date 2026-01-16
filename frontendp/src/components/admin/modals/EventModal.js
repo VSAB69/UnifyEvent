@@ -11,7 +11,6 @@ export default function EventModal({
 }) {
   const [categories, setCategories] = useState([]);
   const [parentEvents, setParentEvents] = useState([]);
-  const [imageKey, setImageKey] = useState(null);
 
   const [form, setForm] = useState({
     parent_committee: "",
