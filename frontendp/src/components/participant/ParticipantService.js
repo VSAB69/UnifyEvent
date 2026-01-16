@@ -9,6 +9,12 @@ const ParticipantService = {
   getConstraintForEvent: (eventId) =>
     appApiClient.get(`/constraints/?event=${eventId}`),
 
+  // 🔐 Secure event image (R2 signed URL)
+  getEventImageSignedUrl: (imageKey) =>
+    appApiClient.get(
+      `/secure/event-image/?key=${encodeURIComponent(imageKey)}`
+    ),
+
   // ------------------------------------
   // SLOTS
   // ------------------------------------
@@ -56,10 +62,9 @@ const ParticipantService = {
     appApiClient.get(`/event-details/?event=${eventId}`),
 
   // ------------------------------------
-  // ⭐ NEW — PARENT EVENTS (for category pages)
+  // PARENT EVENTS
   // ------------------------------------
   getParentEvents: () => appApiClient.get("/parent-events/"),
-
   getParentEvent: (id) => appApiClient.get(`/parent-events/${id}/`),
 
   // Filter events belonging to a parent

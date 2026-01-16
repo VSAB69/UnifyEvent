@@ -1,0 +1,158 @@
+/* PAGE BACKGROUND */
+.replica-wrapper {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #6a5cff, #a855f7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* MAIN CARD */
+.replica-card {
+  width: 920px;
+  height: 460px;
+  background: white;
+  border-radius: 14px;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+}
+
+/* LEFT PANEL */
+.replica-left {
+  position: relative;
+  padding: 60px 50px;
+  color: white;
+  background: linear-gradient(135deg, #7c6cff, #ec4899);
+}
+
+.replica-left h1 {
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
+.replica-left p {
+  font-size: 15px;
+  line-height: 1.6;
+  opacity: 0.9;
+  max-width: 360px;
+}
+
+/* Decorative lines */
+.decor-lines span {
+  position: absolute;
+  bottom: 40px;
+  width: 120px;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff9f6e, #ff6aa2);
+  opacity: 0.8;
+}
+
+.decor-lines span:nth-child(1) {
+  left: 40px;
+}
+.decor-lines span:nth-child(2) {
+  left: 90px;
+  bottom: 70px;
+  width: 80px;
+}
+.decor-lines span:nth-child(3) {
+  left: 160px;
+  bottom: 40px;
+  width: 60px;
+}
+.decor-lines span:nth-child(4) {
+  left: 220px;
+  bottom: 80px;
+  width: 100px;
+}
+
+/* RIGHT PANEL */
+.replica-right {
+  padding: 60px 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.replica-right h3 {
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: #8b5cf6;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+/* INPUTS */
+.input-group {
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  border-radius: 999px;
+  border: none;
+  background: #f3f4f6;
+  font-size: 14px;
+  outline: none;
+}
+
+.input-group .icon {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: #9ca3af;
+}
+
+/* OPTIONS */
+.login-options {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.login-options span {
+  cursor: pointer;
+}
+
+/* BUTTON */
+.replica-right button {
+  border: none;
+  padding: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #7c6cff, #ec4899);
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.replica-right button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(124, 92, 255, 0.4);
+}
+
+/* MOBILE */
+@media (max-width: 900px) {
+  .replica-card {
+    grid-template-columns: 1fr;
+    height: auto;
+    width: 90%;
+  }
+
+  .replica-left {
+    display: none;
+  }
+}

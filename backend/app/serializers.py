@@ -43,7 +43,6 @@ class EventSerializer(serializers.ModelSerializer):
         many=True, queryset=Organiser.objects.all(), required=False
     )
 
-    image = serializers.ImageField(required=False, allow_null=True)
 
     parent_committee = serializers.CharField(required=False)
     name = serializers.CharField(required=False)
@@ -62,6 +61,7 @@ class EventSerializer(serializers.ModelSerializer):
 
     price = serializers.DecimalField(max_digits=9, decimal_places=2, required=False)
     exclusivity = serializers.BooleanField(required=False)
+    image_key = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
@@ -74,10 +74,24 @@ class EventSerializer(serializers.ModelSerializer):
             'price',
             'exclusivity',
             'organisers',
-            'image',               # NEW
+            'image',       # ✅ add this
+            "image_key",
             'constraint_id',
             'details_id'
         ]
+        extra_kwargs = {
+            "image": {"write_only": True, "required": False}
+        }
+
+    
+    def get_image_key(self, obj):
+        return obj.image.name if obj.image else None
+    
+    def get_constraint_id(self, obj):
+        return obj.constraint.id if hasattr(obj, "constraint") else None
+
+    def get_details_id(self, obj):
+        return obj.details.id if hasattr(obj, "details") else None
 
 
 

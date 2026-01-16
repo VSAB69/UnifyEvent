@@ -6,6 +6,7 @@ from rest_framework import permissions, viewsets
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from .models import *
 from .serializers import *
@@ -18,6 +19,8 @@ class EventViewSet(viewsets.ModelViewSet):
 
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['parent_event']
+    parser_classes = [MultiPartParser, FormParser]
+
 
     # ⭐ ALWAYS annotate and prefetch required relations
     def get_base_queryset(self):
@@ -33,19 +36,25 @@ class EventViewSet(viewsets.ModelViewSet):
         )
 
     def get_queryset(self):
-        user = self.request.user
         qs = self.get_base_queryset()
+        user = self.request.user
 
+        # If somehow unauthenticated
+        if not user.is_authenticated:
+            return Event.objects.none()
+
+        # Admin sees all
         if user.role == 'admin':
             return qs
 
+        # Organiser sees only their events
         if user.role == 'organiser':
             return qs.filter(organisers__user=user)
 
-        if user.role == 'participant':
-            return qs
-
+        # Participant should NOT use /events/
+        # They must use /events/browse/
         return Event.objects.none()
+
 
 
     # ---------------------------
@@ -89,6 +98,54 @@ class EventViewSet(viewsets.ModelViewSet):
             return Response({"detail": "Only admin can delete events"}, status=status.HTTP_403_FORBIDDEN)
         return super().destroy(request, *args, **kwargs)
 
+
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import permissions, status
+
+from .models import Event
+from app.utils.r2 import generate_signed_url
+# events/views.py
+
+from rest_framework.views import APIView
+from rest_framework import permissions, status
+from rest_framework.response import Response
+
+from .models import Event
+from app.utils.r2 import generate_signed_url
+
+
+class SecureEventImageView(APIView):
+    """
+    Secure gateway for Event images stored in Cloudflare R2.
+    - Requires authentication
+    - Validates the image belongs to an Event
+    - Returns short-lived signed URL
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        key = request.query_params.get("key")
+        if not key:
+            return Response({"error": "Missing key"}, status=400)
+
+
+        allowed = Event.objects.filter(image__name=key).exists()
+
+
+
+        if not allowed:
+            return Response({"error": "Forbidden"}, status=403)
+
+        signed_url = generate_signed_url(key=key, expires=300)
+
+        return Response({
+            "url": signed_url,
+            "expires_in": 300,
+        })
 
 
 
@@ -136,6 +193,51 @@ class ParentEventViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     queryset = ParentEvent.objects.all()
     serializer_class = ParentEventSerializer
+
+
+
+from urllib.parse import unquote
+from urllib.parse import unquote
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import permissions
+
+from .models import Event
+from .utils.r2 import generate_signed_url
+
+
+class SecureEventImageView(APIView):
+    """
+    The ONLY way event images are accessed.
+    - Requires JWT authentication
+    - Validates event image key exists
+    - Generates short-lived R2 signed URL
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        key = request.query_params.get("key")
+        if not key:
+            return Response({"error": "Missing key"}, status=400)
+
+        key = unquote(key)
+
+        # ───── ACCESS CONTROL ─────
+        allowed = Event.objects.filter(image=key).exists()
+
+        if not allowed:
+            return Response({"error": "Forbidden"}, status=403)
+
+        # Generate signed R2 URL
+        signed_url = generate_signed_url(key=key, expires=300)
+
+        return Response({
+            "url": signed_url,
+            "expires_in": 300
+        })
+
 
 
 class ParticipationConstraintViewSet(viewsets.ModelViewSet):

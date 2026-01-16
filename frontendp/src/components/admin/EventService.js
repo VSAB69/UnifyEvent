@@ -19,7 +19,13 @@ const EventService = {
   // JSON update for organisers, constraints, parent_event, etc.
   updateEventJson: (id, data) => AxiosInstance.put(`/events/${id}/`, data),
 
+  updateEvent: (id, data) => AxiosInstance.put(`/events/${id}/`, data),
+
   deleteEvent: (id) => AxiosInstance.delete(`/events/${id}/`),
+
+  // 🔐 ---------- SECURE EVENT IMAGE ----------
+  getSecureImage: (key) =>
+    AxiosInstance.get(`/secure/event-image/?key=${encodeURIComponent(key)}`),
 
   // ---------- ORGANISERS ----------
   getOrganisers: () => AxiosInstance.get("/organisers/"),

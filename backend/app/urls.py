@@ -1,5 +1,6 @@
 # events/urls.py
 
+from django.urls import path
 from rest_framework.routers import DefaultRouter
 from .views import *
 
@@ -20,7 +21,13 @@ router.register("booked-participants", BookedParticipantViewSet, basename="booke
 router.register("bookings", BookingViewSet, basename="bookings")
 router.register("booked-events", BookedEventViewSet, basename="booked-events")
 
+urlpatterns = [
+    *router.urls,
 
-
-
-urlpatterns = router.urls
+    # 🔐 Secure R2 Event Image Gateway
+    path(
+        "secure/event-image/",
+        SecureEventImageView.as_view(),
+        name="secure-event-image",
+    ),
+]

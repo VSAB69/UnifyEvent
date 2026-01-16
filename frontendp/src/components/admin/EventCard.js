@@ -1,4 +1,3 @@
-// src/components/admin/EventCard.jsx
 import React from "react";
 import { motion } from "framer-motion";
 import {
@@ -11,11 +10,10 @@ import {
 } from "lucide-react";
 import EventService from "./EventService";
 
-/* ---------------- Animation ---------------- */
+/* ---------------- Animations ---------------- */
 const cardVariants = {
-  hidden: { opacity: 0, y: 14 },
+  hidden: { opacity: 0, y: 12 },
   show: { opacity: 1, y: 0 },
-  hover: { scale: 1.03 },
 };
 
 export default function EventCard({
@@ -37,17 +35,15 @@ export default function EventCard({
     try {
       await EventService.deleteEvent(event.id);
       onDelete?.();
-    } catch (err) {
+    } catch {
       alert("Failed to delete event.");
     }
   };
 
   const handleOrganisersClick = () => {
     if (event.organisers && event.organisers.length > 0) {
-      // edit existing organisers
       onEditOrganisers(event.id, event.organisers);
     } else {
-      // add new organisers
       onAddOrganisers(event.id);
     }
   };
@@ -57,14 +53,14 @@ export default function EventCard({
       variants={cardVariants}
       initial="hidden"
       animate="show"
-      whileHover="hover"
-      className="bg-white rounded-2xl shadow-md hover:shadow-xl transition border border-gray-100 overflow-hidden"
+      whileHover={{ y: -4 }}
+      className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition overflow-hidden"
     >
-      {/* ----------------- HEADER ----------------- */}
-      <div className="bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 p-4">
-        <div className="flex justify-between items-start">
-          <div className="flex-1 min-w-0">
-            <h3 className="text-white text-lg font-bold truncate">
+      {/* ---------- HEADER ---------- */}
+      <div className="p-4 border-b bg-gradient-to-r from-purple-600 to-indigo-600">
+        <div className="flex justify-between items-start gap-4">
+          <div className="min-w-0">
+            <h3 className="text-white text-lg font-semibold truncate">
               {event.name}
             </h3>
             <p className="text-white/80 text-sm truncate">
@@ -72,21 +68,21 @@ export default function EventCard({
             </p>
           </div>
 
-          <div className="text-right">
-            <p className="text-white text-base font-semibold">
+          <div className="text-right shrink-0">
+            <p className="text-white font-semibold">
               ₹{Number(event.price || 0).toFixed(2)}
             </p>
-            <p className="text-white/70 text-xs">
+            <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-white/20 text-white">
               {event.exclusivity ? "Exclusive" : "Open"}
-            </p>
+            </span>
           </div>
         </div>
       </div>
 
-      {/* ----------------- BODY ----------------- */}
-      <div className="p-4 flex flex-col gap-4">
+      {/* ---------- BODY ---------- */}
+      <div className="p-4 space-y-4">
         {/* Description */}
-        <div className="min-h-[44px] text-sm text-gray-700 leading-relaxed">
+        <div className="text-sm text-gray-700 min-h-[48px]">
           {event.description ? (
             <p className="line-clamp-3">{event.description}</p>
           ) : (
@@ -94,29 +90,29 @@ export default function EventCard({
           )}
         </div>
 
-        {/* Meta Row */}
-        <div className="flex items-center gap-5 text-xs text-gray-500">
+        {/* Meta */}
+        <div className="flex items-center gap-6 text-xs text-gray-500">
           <div className="flex items-center gap-1.5">
             <Calendar className="w-4 h-4 text-purple-600" />
             <span>{event.start_date || "—"}</span>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <Users className="w-4 h-4 text-pink-500" />
+            <Users className="w-4 h-4 text-indigo-600" />
             <span>
               {event.capacity ? `${event.capacity} seats` : "Capacity N/A"}
             </span>
           </div>
         </div>
 
-        {/* ----------------- BUTTON GRID ----------------- */}
-        <div className="grid grid-cols-2 gap-2">
-          {/* ---- Row 1 ---- */}
-          <AnimatedButton primary onClick={() => onEditEvent(event)}>
+        {/* ---------- ACTIONS ---------- */}
+        <div className="grid grid-cols-2 gap-2 pt-2">
+          {/* Primary */}
+          <ActionBtn primary onClick={() => onEditEvent(event)}>
             <Edit2 className="w-4 h-4" /> Edit
-          </AnimatedButton>
+          </ActionBtn>
 
-          <AnimatedButton
+          <ActionBtn
             onClick={() =>
               event.constraint_id
                 ? onEditConstraints(event.constraint_id, event.id)
@@ -124,10 +120,9 @@ export default function EventCard({
             }
           >
             <Layers className="w-4 h-4" /> Constraints
-          </AnimatedButton>
+          </ActionBtn>
 
-          {/* ---- Row 2 ---- */}
-          <AnimatedButton
+          <ActionBtn
             onClick={() =>
               event.details_id
                 ? onEditDetails(event.details_id, event.id)
@@ -135,30 +130,26 @@ export default function EventCard({
             }
           >
             <Calendar className="w-4 h-4" /> Details
-          </AnimatedButton>
+          </ActionBtn>
 
-          <AnimatedButton onClick={() => onOpenSlots(event.id, event.name)}>
+          <ActionBtn onClick={() => onOpenSlots(event.id, event.name)}>
             <Calendar className="w-4 h-4" /> Slots
-          </AnimatedButton>
+          </ActionBtn>
 
-          {/* ---- Row 3 ---- */}
-          <AnimatedButton green onClick={() => onOpenAttendance(event.id)}>
+          <ActionBtn green onClick={() => onOpenAttendance(event.id)}>
             <CheckCircle className="w-4 h-4" /> Attendance
-          </AnimatedButton>
+          </ActionBtn>
 
-          {/* ⭐ NEW: Organisers button ⭐ */}
-          <AnimatedButton onClick={handleOrganisersClick}>
+          <ActionBtn onClick={handleOrganisersClick}>
             <Users className="w-4 h-4" />
-            {event.organisers && event.organisers.length > 0
-              ? "Edit Organisers"
-              : "Add Organisers"}
-          </AnimatedButton>
+            {event.organisers?.length ? "Edit Organisers" : "Add Organisers"}
+          </ActionBtn>
 
-          {/* ---- Row 4 (Delete for admin) ---- */}
+          {/* Destructive */}
           {role === "admin" && (
-            <AnimatedButton danger onClick={handleDelete}>
+            <ActionBtn danger onClick={handleDelete}>
               <Trash2 className="w-4 h-4" /> Delete
-            </AnimatedButton>
+            </ActionBtn>
           )}
         </div>
       </div>
@@ -166,25 +157,25 @@ export default function EventCard({
   );
 }
 
-/* ---------------- Reusable Button ---------------- */
-function AnimatedButton({ children, onClick, primary, danger, green }) {
+/* ---------- BUTTON ---------- */
+function ActionBtn({ children, onClick, primary, danger, green }) {
   const base =
     "flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all w-full";
 
-  const colors = primary
-    ? "bg-gradient-to-r from-purple-600 to-pink-500 text-white hover:shadow-lg"
+  const styles = primary
+    ? "bg-purple-600 text-white hover:bg-purple-700 shadow-sm"
+    : green
+    ? "bg-green-600 text-white hover:bg-green-700"
     : danger
     ? "bg-red-100 text-red-700 border border-red-300 hover:bg-red-200"
-    : green
-    ? "bg-green-600 text-white hover:bg-green-700 shadow-md"
     : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-100";
 
   return (
     <motion.button
-      whileTap={{ scale: 0.94 }}
-      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.96 }}
+      whileHover={{ scale: 1.03 }}
       onClick={onClick}
-      className={`${base} ${colors}`}
+      className={`${base} ${styles}`}
     >
       {children}
     </motion.button>

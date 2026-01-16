@@ -1,15 +1,6 @@
-import React, { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  FormControlLabel,
-  Checkbox,
-  MenuItem,
-} from "@mui/material";
+import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Users, Lock } from "lucide-react";
 import EventService from "../EventService";
 
 export default function ParticipationConstraintModal({
@@ -27,6 +18,8 @@ export default function ParticipationConstraintModal({
   });
 
   useEffect(() => {
+    if (!open) return;
+
     if (constraintId) {
       EventService.getConstraintById(constraintId).then((res) => {
         const c = res.data;
@@ -46,6 +39,16 @@ export default function ParticipationConstraintModal({
       });
     }
   }, [constraintId, open]);
+
+  if (!open) return null;
+
+  const disableLogic = {
+    fixedDisabled: form.booking_type === "single",
+    lowerDisabled:
+      form.booking_type === "single" ||
+      (form.booking_type === "multiple" && form.fixed),
+    upperDisabled: form.booking_type === "single",
+  };
 
   const handleSubmit = async () => {
     let payload = { event: eventId, booking_type: form.booking_type };
@@ -70,14 +73,11 @@ export default function ParticipationConstraintModal({
       } else {
         await EventService.createConstraint(payload);
       }
-    } catch (err) {
-      // fallback: event already has constraint -> find it then update
+    } catch {
       const list = await EventService.getConstraints();
       const existing = list.data.find((c) => c.event === eventId);
       if (existing) {
         await EventService.updateConstraint(existing.id, payload);
-      } else {
-        throw err;
       }
     }
 
@@ -85,72 +85,137 @@ export default function ParticipationConstraintModal({
     onClose();
   };
 
-  const disableLogic = {
-    fixedDisabled: form.booking_type === "single",
-    lowerDisabled:
-      form.booking_type === "single" ||
-      (form.booking_type === "multiple" && form.fixed),
-    upperDisabled: form.booking_type === "single",
-  };
-
   return (
-    <Dialog open={open} onClose={onClose} fullWidth>
-      <DialogTitle>
-        {constraintId
-          ? "Edit Participation Constraints"
-          : "Add Participation Constraints"}
-      </DialogTitle>
-      <DialogContent>
-        <TextField
-          select
-          label="Booking Type"
-          fullWidth
-          margin="dense"
-          value={form.booking_type}
-          onChange={(e) => setForm({ ...form, booking_type: e.target.value })}
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center px-4"
+      >
+        <motion.div
+          initial={{ scale: 0.96, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.96, opacity: 0 }}
+          transition={{ duration: 0.25 }}
+          className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl p-8"
         >
-          <MenuItem value="single">Single</MenuItem>
-          <MenuItem value="multiple">Multiple</MenuItem>
-        </TextField>
+          {/* CLOSE */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition"
+          >
+            <X className="w-5 h-5 text-gray-600" />
+          </button>
 
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={form.fixed}
-              disabled={disableLogic.fixedDisabled}
-              onChange={(e) => setForm({ ...form, fixed: e.target.checked })}
-            />
-          }
-          label="Fixed"
-        />
+          {/* HEADER */}
+          <div className="mb-6">
+            <p className="text-xs font-semibold tracking-widest uppercase text-purple-600">
+              Admin
+            </p>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {constraintId
+                ? "Edit Participation Constraints"
+                : "Add Participation Constraints"}
+            </h2>
+          </div>
 
-        <TextField
-          label="Lower Limit"
-          type="number"
-          disabled={disableLogic.lowerDisabled}
-          fullWidth
-          margin="dense"
-          value={form.lower_limit}
-          onChange={(e) => setForm({ ...form, lower_limit: e.target.value })}
-        />
+          {/* MAIN GRID */}
+          <div className="grid grid-cols-2 gap-8">
+            {/* LEFT — TYPE */}
+            <div className="space-y-5">
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Booking Type
+                </label>
+                <select
+                  value={form.booking_type}
+                  onChange={(e) =>
+                    setForm({ ...form, booking_type: e.target.value })
+                  }
+                  className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
+                >
+                  <option value="single">Single Participant</option>
+                  <option value="multiple">Multiple Participants</option>
+                </select>
+              </div>
 
-        <TextField
-          label="Upper Limit"
-          type="number"
-          disabled={disableLogic.upperDisabled}
-          fullWidth
-          margin="dense"
-          value={form.upper_limit}
-          onChange={(e) => setForm({ ...form, upper_limit: e.target.value })}
-        />
-      </DialogContent>
+              <label className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  disabled={disableLogic.fixedDisabled}
+                  checked={form.fixed}
+                  onChange={(e) =>
+                    setForm({ ...form, fixed: e.target.checked })
+                  }
+                  className="w-5 h-5"
+                />
+                <span className="text-sm font-medium text-gray-800 flex items-center gap-2">
+                  <Lock className="w-4 h-4" />
+                  Fixed team size
+                </span>
+              </label>
+            </div>
 
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSubmit} variant="contained">
-          Save Constraints
-        </Button>
-      </DialogActions>
-    </Dialog>
+            {/* RIGHT — LIMITS */}
+            <div className="space-y-5">
+              <Field
+                label="Lower Limit"
+                type="number"
+                disabled={disableLogic.lowerDisabled}
+                value={form.lower_limit}
+                onChange={(v) => setForm({ ...form, lower_limit: v })}
+              />
+
+              <Field
+                label="Upper Limit"
+                type="number"
+                disabled={disableLogic.upperDisabled}
+                value={form.upper_limit}
+                onChange={(v) => setForm({ ...form, upper_limit: v })}
+              />
+            </div>
+          </div>
+
+          {/* ACTIONS */}
+          <div className="flex gap-3 mt-8">
+            <button
+              onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition"
+            >
+              Cancel
+            </button>
+
+            <motion.button
+              onClick={handleSubmit}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="flex-1 py-2.5 rounded-xl bg-purple-600 text-white font-semibold hover:bg-purple-700 transition shadow-md"
+            >
+              Save Constraints
+            </motion.button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+/* ---------- FIELD ---------- */
+
+function Field({ label, value, onChange, type, disabled }) {
+  return (
+    <div>
+      <label className="text-sm font-medium text-gray-700">{label}</label>
+      <input
+        type={type}
+        disabled={disabled}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`mt-1 w-full rounded-xl border px-3 py-2 text-sm ${
+          disabled ? "bg-gray-100 text-gray-500" : ""
+        }`}
+      />
+    </div>
   );
 }

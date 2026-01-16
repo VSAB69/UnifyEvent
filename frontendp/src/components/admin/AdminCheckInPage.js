@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import EventService from "../admin/EventService";
-import { motion } from "framer-motion";
-import { Search, Users, Calendar } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, Users, Calendar, CheckCircle, X } from "lucide-react";
 
 export default function AdminCheckInPage() {
-  const { eventId } = useParams(); // 🔥 REQUIRED: filter bookings by event
+  const { eventId } = useParams();
 
   const [allBookings, setAllBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +16,21 @@ export default function AdminCheckInPage() {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [editedParticipants, setEditedParticipants] = useState({});
 
-  /* ------------ Load Booked Events ------------ */
+  /* ---------- SNACKBAR ---------- */
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    type: "success", // success | error
+  });
+
+  const showSnackbar = (message, type = "success") => {
+    setSnackbar({ open: true, message, type });
+    setTimeout(() => {
+      setSnackbar((s) => ({ ...s, open: false }));
+    }, 2600);
+  };
+
+  /* ---------- LOAD ---------- */
   const load = async () => {
     setLoading(true);
     try {
@@ -31,17 +45,17 @@ export default function AdminCheckInPage() {
     load();
   }, []);
 
-  /* ------------ Filter only this event's bookings ------------ */
+  /* ---------- FILTER BY EVENT ---------- */
   const eventBookings = useMemo(
     () => allBookings.filter((b) => Number(b.event) === Number(eventId)),
     [allBookings, eventId]
   );
 
-  /* ------------ Slot Options for this event only ------------ */
+  /* ---------- SLOT OPTIONS ---------- */
   const slotOptions = useMemo(() => {
     const map = new Map();
     eventBookings.forEach((b) => {
-      if (b.slot && b.slot_info) {
+      if (b.slot_info) {
         map.set(b.slot_info.id, {
           id: b.slot_info.id,
           label: `${b.slot_info.date} • ${b.slot_info.start_time} - ${b.slot_info.end_time}`,
@@ -51,7 +65,7 @@ export default function AdminCheckInPage() {
     return [...map.values()];
   }, [eventBookings]);
 
-  /* ------------ Apply Filters ------------ */
+  /* ---------- APPLY FILTERS ---------- */
   const filtered = eventBookings.filter((b) => {
     const matchSlot = slotFilter
       ? b.slot_info?.id === Number(slotFilter)
@@ -62,7 +76,7 @@ export default function AdminCheckInPage() {
     return matchSlot && matchTeam;
   });
 
-  /* ------------ Toggle (UI only) ------------ */
+  /* ---------- LOCAL TOGGLE ---------- */
   const toggleLocalAttendance = (p) => {
     setEditedParticipants((prev) => ({
       ...prev,
@@ -73,7 +87,7 @@ export default function AdminCheckInPage() {
     }));
   };
 
-  /* ------------ Save Only Changed Attendance ------------ */
+  /* ---------- SAVE ---------- */
   const saveAttendance = async () => {
     const changed = Object.values(editedParticipants).filter((local) => {
       const original = selectedBooking.participants.find(
@@ -85,31 +99,39 @@ export default function AdminCheckInPage() {
     try {
       for (let p of changed) {
         if (p.arrived) await EventService.checkInParticipant(p.id);
-        // Undo not supported by backend
       }
-      alert("Attendance saved.");
+
+      showSnackbar("Attendance saved successfully");
       setEditedParticipants({});
       load();
       setSelectedBooking(null);
-    } catch (err) {
-      console.log(err);
-      alert("Failed to save attendance.");
+    } catch {
+      showSnackbar("Failed to save attendance", "error");
     }
   };
 
-  /* ------------ UI ------------ */
-  if (loading) return <p className="p-6">Loading bookings…</p>;
+  if (loading) return <p className="p-6">Loading…</p>;
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-3">Attendance – Event #{eventId}</h1>
+    <div className="max-w-7xl mx-auto px-6 py-8">
+      {/* ---------- HEADER ---------- */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <h1 className="text-3xl font-bold text-gray-900">Event Attendance</h1>
+        <p className="text-gray-500 mt-1">
+          Check-in participants for Event #{eventId}
+        </p>
+      </motion.div>
 
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
+      {/* ---------- FILTER BAR ---------- */}
+      <div className="flex flex-col lg:flex-row gap-4 mb-8">
         <select
           value={slotFilter}
           onChange={(e) => setSlotFilter(e.target.value)}
-          className="p-3 bg-white shadow rounded-xl w-full md:w-1/3"
+          className="px-4 py-3 rounded-xl border border-gray-300 bg-white w-full lg:w-1/3"
         >
           <option value="">All Slots</option>
           {slotOptions.map((slot) => (
@@ -119,10 +141,10 @@ export default function AdminCheckInPage() {
           ))}
         </select>
 
-        <div className="flex items-center bg-white shadow p-3 rounded-xl w-full md:w-1/2">
+        <div className="flex items-center px-4 py-3 rounded-xl border border-gray-300 bg-white w-full lg:w-1/2">
           <Search className="w-5 h-5 text-gray-400 mr-2" />
           <input
-            placeholder="Search by team leader…"
+            placeholder="Search by team leader"
             value={teamSearch}
             onChange={(e) => setTeamSearch(e.target.value)}
             className="flex-1 outline-none"
@@ -130,29 +152,31 @@ export default function AdminCheckInPage() {
         </div>
       </div>
 
-      {/* Bookings List */}
+      {/* ---------- BOOKINGS ---------- */}
       <div className="grid gap-4">
         {filtered.map((b) => (
           <motion.div
             key={b.id}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-5 bg-white shadow-md rounded-xl border flex justify-between"
+            whileHover={{ y: -2 }}
+            className="bg-white rounded-2xl border border-gray-200 p-5 flex justify-between items-center"
           >
             <div>
-              <h2 className="text-lg font-semibold">
-                Team Leader: {b.participants[0]?.name}
+              <h2 className="font-semibold text-lg">
+                {b.participants[0]?.name}
               </h2>
 
-              <p className="text-gray-500 text-sm flex items-center gap-2 mt-1">
-                <Calendar className="w-4 h-4" />
-                {b.slot_info?.date} • {b.slot_info?.start_time} -{" "}
-                {b.slot_info?.end_time}
-              </p>
-
-              <p className="text-gray-500 text-sm flex items-center gap-2">
-                <Users className="w-4 h-4" /> Members: {b.participants.length}
-              </p>
+              <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  {b.slot_info?.date}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Users className="w-4 h-4" />
+                  {b.participants.length} members
+                </span>
+              </div>
             </div>
 
             <button
@@ -160,95 +184,102 @@ export default function AdminCheckInPage() {
                 setSelectedBooking(b);
                 setEditedParticipants({});
               }}
-              className="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
+              className="px-5 py-2.5 rounded-xl bg-purple-600 text-white font-medium hover:bg-purple-700"
             >
-              View
+              View Team
             </button>
           </motion.div>
         ))}
       </div>
 
-      {/* Modal */}
-      {selectedBooking && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
+      {/* ---------- MODAL ---------- */}
+      <AnimatePresence>
+        {selectedBooking && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-6"
           >
-            <h3 className="text-2xl font-bold mb-2">
-              Team – {selectedBooking.participants[0]?.name}
-            </h3>
+            <motion.div
+              initial={{ scale: 0.96, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.96, opacity: 0 }}
+              className="bg-white rounded-3xl w-full max-w-2xl p-6 shadow-xl"
+            >
+              <h3 className="text-2xl font-bold mb-1">Team Attendance</h3>
 
-            <p className="text-sm text-gray-600 mb-4">
-              {selectedBooking.slot_info.date} •{" "}
-              {selectedBooking.slot_info.start_time} -{" "}
-              {selectedBooking.slot_info.end_time}
-            </p>
+              <div className="space-y-3 mt-6">
+                {selectedBooking.participants.map((p) => {
+                  const local = editedParticipants[p.id];
+                  const arrived = local ? local.arrived : p.arrived;
 
-            <div className="grid gap-4">
-              {selectedBooking.participants.map((p) => {
-                const local = editedParticipants[p.id];
-                const arrived = local ? local.arrived : p.arrived;
-
-                return (
-                  <div
-                    key={p.id}
-                    className="p-4 rounded-xl bg-white border border-gray-200 flex justify-between items-center"
-                  >
-                    <div>
-                      <p className="font-semibold">{p.name}</p>
-                      <p className="text-gray-500 text-xs">{p.email}</p>
-
-                      {arrived ? (
-                        <p className="text-xs text-green-600 mt-1">
-                          Marked present
-                        </p>
-                      ) : (
-                        <p className="text-xs text-red-500 mt-1">
-                          Not checked-in
-                        </p>
-                      )}
-                    </div>
-
+                  return (
                     <div
-                      onClick={() => toggleLocalAttendance(p)}
-                      className={`w-14 h-7 flex items-center rounded-full p-1 cursor-pointer transition ${
-                        arrived ? "bg-green-500" : "bg-red-400"
-                      }`}
+                      key={p.id}
+                      className="flex items-center justify-between p-4 border rounded-xl"
                     >
-                      <motion.div
-                        layout
-                        className="w-5 h-5 bg-white rounded-full shadow"
-                        transition={{
-                          type: "spring",
-                          stiffness: 500,
-                          damping: 30,
-                        }}
-                        style={{ marginLeft: arrived ? "28px" : "2px" }}
-                      />
+                      <div>
+                        <p className="font-medium">{p.name}</p>
+                        <p className="text-xs text-gray-500">{p.email}</p>
+                      </div>
+
+                      <div
+                        onClick={() => toggleLocalAttendance(p)}
+                        className={`w-16 h-8 flex items-center rounded-full p-1 cursor-pointer transition ${
+                          arrived ? "bg-green-500" : "bg-gray-300"
+                        }`}
+                      >
+                        <motion.div
+                          layout
+                          className="w-6 h-6 bg-white rounded-full shadow"
+                          style={{
+                            marginLeft: arrived ? "32px" : "2px",
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
 
-            <button
-              onClick={saveAttendance}
-              className="w-full mt-6 bg-purple-600 py-2 text-white rounded-xl hover:bg-purple-700"
-            >
-              Save Attendance
-            </button>
+              <button
+                onClick={saveAttendance}
+                className="w-full mt-6 py-3 rounded-xl bg-purple-600 text-white font-semibold hover:bg-purple-700 flex items-center justify-center gap-2"
+              >
+                <CheckCircle className="w-5 h-5" />
+                Save Attendance
+              </button>
 
-            <button
-              onClick={() => setSelectedBooking(null)}
-              className="w-full mt-3 bg-gray-200 py-2 rounded-xl hover:bg-gray-300"
-            >
-              Close
+              <button
+                onClick={() => setSelectedBooking(null)}
+                className="w-full mt-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100"
+              >
+                Close
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ---------- SNACKBAR ---------- */}
+      <AnimatePresence>
+        {snackbar.open && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className={`fixed bottom-6 right-6 z-[100] px-5 py-3 rounded-xl shadow-xl text-white flex items-center gap-3 ${
+              snackbar.type === "success" ? "bg-green-600" : "bg-red-600"
+            }`}
+          >
+            <span className="text-sm font-medium">{snackbar.message}</span>
+            <button onClick={() => setSnackbar({ ...snackbar, open: false })}>
+              <X className="w-4 h-4" />
             </button>
           </motion.div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }

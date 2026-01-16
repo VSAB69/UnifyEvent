@@ -1,16 +1,6 @@
 import React, { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  FormControlLabel,
-  Checkbox,
-  Grid,
-  Alert,
-} from "@mui/material";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Clock, Users, AlertTriangle, Calendar } from "lucide-react";
 import EventService from "../EventService";
 
 export default function EventSlotModal({
@@ -35,6 +25,9 @@ export default function EventSlotModal({
 
   useEffect(() => {
     setError("");
+
+    if (!open) return;
+
     if (editMode) {
       EventService.getEventSlotById(slotId).then((res) => {
         const s = res.data;
@@ -57,16 +50,16 @@ export default function EventSlotModal({
         booked_participants: "0",
       });
     }
-  }, [slotId, open]); // reset each open or slot change
+  }, [slotId, open, editMode]);
 
   const validateTimes = () => {
     if (!form.start_time || !form.end_time) return true;
-    // simple string compare works for HH:mm
     return form.end_time > form.start_time;
   };
 
   const handleSubmit = async () => {
     setError("");
+
     if (!validateTimes()) {
       setError("End time must be after start time.");
       return;
@@ -96,58 +89,86 @@ export default function EventSlotModal({
     onClose();
   };
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth>
-      <DialogTitle>{editMode ? "Edit Slot" : "Add Slot"}</DialogTitle>
-      <DialogContent>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center px-4"
+      >
+        <motion.div
+          initial={{ scale: 0.96, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.96, opacity: 0 }}
+          transition={{ duration: 0.25 }}
+          className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl p-8"
+        >
+          {/* CLOSE */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition"
+          >
+            <X className="w-5 h-5 text-gray-600" />
+          </button>
 
-        <Grid container spacing={2} sx={{ mt: 0.5 }}>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Date"
-              type="date"
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              value={form.date}
-              onChange={(e) => setForm({ ...form, date: e.target.value })}
-            />
-          </Grid>
-          <Grid item xs={12} sm={3}>
-            <TextField
-              label="Start Time"
-              type="time"
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              value={form.start_time}
-              onChange={(e) => setForm({ ...form, start_time: e.target.value })}
-            />
-          </Grid>
-          <Grid item xs={12} sm={3}>
-            <TextField
-              label="End Time"
-              type="time"
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              value={form.end_time}
-              onChange={(e) => setForm({ ...form, end_time: e.target.value })}
-              error={!!form.end_time && !validateTimes()}
-              helperText={
-                !!form.end_time && !validateTimes()
-                  ? "End must be after start"
-                  : ""
-              }
-            />
-          </Grid>
+          {/* HEADER */}
+          <div className="mb-6">
+            <p className="text-xs font-semibold tracking-widest uppercase text-purple-600">
+              Admin
+            </p>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {editMode ? "Edit Event Slot" : "Add Event Slot"}
+            </h2>
+          </div>
 
-          <Grid item xs={12}>
-            <FormControlLabel
-              control={
-                <Checkbox
+          {/* ERROR */}
+          {error && (
+            <div className="mb-5 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <AlertTriangle className="w-4 h-4" />
+              {error}
+            </div>
+          )}
+
+          {/* MAIN GRID */}
+          <div className="grid grid-cols-2 gap-6">
+            {/* LEFT — DATE & TIME */}
+            <div className="space-y-5">
+              <Field
+                label="Date"
+                type="date"
+                icon={<Calendar className="w-4 h-4" />}
+                value={form.date}
+                onChange={(v) => setForm({ ...form, date: v })}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <Field
+                  label="Start Time"
+                  type="time"
+                  icon={<Clock className="w-4 h-4" />}
+                  value={form.start_time}
+                  onChange={(v) => setForm({ ...form, start_time: v })}
+                />
+
+                <Field
+                  label="End Time"
+                  type="time"
+                  icon={<Clock className="w-4 h-4" />}
+                  value={form.end_time}
+                  onChange={(v) => setForm({ ...form, end_time: v })}
+                  error={!!form.end_time && !validateTimes()}
+                />
+              </div>
+            </div>
+
+            {/* RIGHT — CAPACITY */}
+            <div className="space-y-5">
+              <label className="flex items-center gap-3 mt-1">
+                <input
+                  type="checkbox"
                   checked={form.unlimited_participants}
                   onChange={(e) =>
                     setForm({
@@ -155,46 +176,87 @@ export default function EventSlotModal({
                       unlimited_participants: e.target.checked,
                     })
                   }
+                  className="w-5 h-5"
                 />
-              }
-              label="Unlimited participants"
-            />
-          </Grid>
+                <span className="text-sm font-medium text-gray-800">
+                  Unlimited participants
+                </span>
+              </label>
 
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Max Participants"
-              type="number"
-              fullWidth
-              disabled={form.unlimited_participants}
-              value={form.max_participants}
-              onChange={(e) =>
-                setForm({ ...form, max_participants: e.target.value })
-              }
-            />
-          </Grid>
+              <Field
+                label="Max Participants"
+                type="number"
+                icon={<Users className="w-4 h-4" />}
+                disabled={form.unlimited_participants}
+                value={form.max_participants}
+                onChange={(v) => setForm({ ...form, max_participants: v })}
+              />
 
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Booked Participants"
-              type="number"
-              fullWidth
-              value={form.booked_participants}
-              onChange={(e) =>
-                setForm({ ...form, booked_participants: e.target.value })
-              }
-              helperText="(Manually editable, availability auto-recomputed)"
-            />
-          </Grid>
-        </Grid>
-      </DialogContent>
+              <Field
+                label="Booked Participants"
+                type="number"
+                icon={<Users className="w-4 h-4" />}
+                value={form.booked_participants}
+                onChange={(v) => setForm({ ...form, booked_participants: v })}
+                helper="Manually editable (availability auto-updated)"
+              />
+            </div>
+          </div>
 
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSubmit}>
-          {editMode ? "Save Changes" : "Add Slot"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+          {/* ACTIONS */}
+          <div className="flex gap-3 mt-8">
+            <button
+              onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition"
+            >
+              Cancel
+            </button>
+
+            <motion.button
+              onClick={handleSubmit}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="flex-1 py-2.5 rounded-xl bg-purple-600 text-white font-semibold hover:bg-purple-700 transition shadow-md"
+            >
+              {editMode ? "Save Changes" : "Add Slot"}
+            </motion.button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+/* ---------- REUSABLE FIELD ---------- */
+
+function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  icon,
+  disabled,
+  error,
+  helper,
+}) {
+  return (
+    <div>
+      <label className="text-sm font-medium text-gray-700">{label}</label>
+      <div
+        className={`mt-1 flex gap-2 rounded-xl border px-3 py-2 ${
+          error ? "border-red-400" : "border-gray-300"
+        } ${disabled ? "bg-gray-100" : ""}`}
+      >
+        {icon && <span className="text-gray-400">{icon}</span>}
+        <input
+          type={type}
+          value={value}
+          disabled={disabled}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full outline-none text-sm bg-transparent"
+        />
+      </div>
+      {helper && <p className="text-xs text-gray-500 mt-1">{helper}</p>}
+    </div>
   );
 }

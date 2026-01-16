@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, MapPin, Clock } from "lucide-react";
+import { X, MapPin, Clock, Calendar } from "lucide-react";
 import ParticipantService from "./ParticipantService";
 
 export default function EventFullDetailsModal({
@@ -29,48 +29,23 @@ export default function EventFullDetailsModal({
 
     const load = async () => {
       setLoading(true);
-      setConstraint(null);
-      setDetails(null);
-      setSlots([]);
-
       try {
-        // constraints
         if (event.constraint_id) {
-          try {
-            const cRes = await ParticipantService.getConstraintById(
-              event.constraint_id
-            );
-            setConstraint(cRes.data);
-          } catch {}
-        } else {
-          try {
-            const cRes = await ParticipantService.getConstraintForEvent(
-              event.id
-            );
-            if (Array.isArray(cRes.data) && cRes.data.length > 0) {
-              setConstraint(cRes.data[0]);
-            }
-          } catch {}
+          const c = await ParticipantService.getConstraintById(
+            event.constraint_id
+          );
+          setConstraint(c.data);
         }
 
-        // event details
-        try {
-          const dRes = await ParticipantService.getEventDetailsByEvent(
-            event.id
-          );
-          if (Array.isArray(dRes.data) && dRes.data.length > 0) {
-            setDetails(dRes.data[0]);
-          }
-        } catch {}
+        const d = await ParticipantService.getEventDetailsByEvent(event.id);
+        if (Array.isArray(d.data) && d.data.length > 0) {
+          setDetails(d.data[0]);
+        }
 
-        // slots
-        try {
-          const sRes = await ParticipantService.getEventSlots(event.id);
-          setSlots(sRes.data || []);
-        } catch {}
-      } finally {
-        setLoading(false);
-      }
+        const s = await ParticipantService.getEventSlots(event.id);
+        setSlots(s.data || []);
+      } catch {}
+      setLoading(false);
     };
 
     load();
@@ -88,238 +63,177 @@ export default function EventFullDetailsModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/35 backdrop-blur-sm z-50 flex justify-center items-center p-6"
+        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center px-6"
       >
         <motion.div
-          initial={{ scale: 0.97, opacity: 0 }}
+          initial={{ scale: 0.96, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.97, opacity: 0 }}
-          transition={{ duration: 0.28 }}
-          className="relative bg-white rounded-3xl w-full max-w-[1350px] h-[92vh] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.22)] grid grid-cols-1 md:grid-cols-2"
+          exit={{ scale: 0.96, opacity: 0 }}
+          transition={{ duration: 0.25 }}
+          className="
+            relative bg-white rounded-3xl w-full max-w-4xl
+            shadow-2xl p-8
+          "
         >
-          {/* FIXED CLOSE BUTTON (apple style) */}
+          {/* CLOSE */}
           <button
             onClick={onClose}
-            className="absolute top-5 right-5 bg-white/80 backdrop-blur-lg border border-gray-300 shadow-sm rounded-full p-2 z-[999] hover:bg-white transition"
+            className="absolute top-4 right-4 p-2 rounded-full border bg-white hover:bg-gray-100 transition"
           >
             <X className="w-5 h-5 text-gray-700" />
           </button>
 
-          {/* LEFT IMAGE PANEL */}
-          <div className="relative w-full h-full overflow-hidden">
-            {/* subtle overlay gradient */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/10 mix-blend-multiply"></div>
-
-            {event.image ? (
-              <img
-                src={event.image}
-                alt={event.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-gray-200" />
-            )}
-          </div>
-
-          {/* RIGHT PANEL */}
-          <div className="relative p-10 overflow-y-auto">
-            {/* PREMIUM LOW-SLOTS BANNER */}
-            {anyLowSlots && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="mb-6"
-              >
-                <div className="px-5 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 font-medium text-sm text-center shadow-sm">
-                  ⚠️ Few slots left — secure your spot now
-                </div>
-              </motion.div>
-            )}
-
-            {/* TITLE */}
-            <motion.h1
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="text-4xl font-bold text-gray-900 leading-tight mb-3"
-            >
+          {/* HEADER */}
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-900 leading-tight">
               {event.name}
-            </motion.h1>
+            </h1>
 
-            {/* PRICE */}
-            <div className="flex items-center gap-4 mb-8">
-              <span className="text-3xl font-semibold text-purple-700 tracking-tight">
-                ₹{Number(event.price).toFixed(2)}
+            <div className="flex items-center gap-4 mt-2">
+              <span className="text-2xl font-semibold text-purple-700">
+                {event.price === 0 ? "Free" : `₹ ${event.price}`}
               </span>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  event.exclusivity
-                    ? "bg-purple-100 text-purple-700"
-                    : "bg-gray-100 text-gray-700"
-                }`}
-              >
-                {event.exclusivity ? "Exclusive event" : "Open event"}
+
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">
+                {event.exclusivity ? "Exclusive" : "Open Event"}
               </span>
             </div>
+          </div>
 
-            {/* EVENT DETAILS CARD */}
-            <section className="mb-10">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Event Details
-              </h2>
+          {/* LOW SLOT WARNING */}
+          {anyLowSlots && (
+            <div className="mb-5 px-4 py-2 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
+              ⚠️ Few slots left — book soon
+            </div>
+          )}
 
-              <div className="bg-gray-50 border border-gray-200 p-6 rounded-2xl shadow-sm space-y-5">
+          {/* INFO GRID */}
+          {details && (
+            <div className="grid grid-cols-3 gap-6 mb-6">
+              <Info icon={<MapPin />} label="Venue" value={details.venue} />
+              <Info
+                icon={<Calendar />}
+                label="Starts"
+                value={fmt(details.start_datetime)}
+              />
+              <Info
+                icon={<Clock />}
+                label="Ends"
+                value={fmt(details.end_datetime)}
+              />
+            </div>
+          )}
+
+          {/* DESCRIPTION */}
+          {details?.description && (
+            <p className="text-gray-700 text-sm leading-relaxed line-clamp-3 mb-6">
+              {details.description}
+            </p>
+          )}
+
+          {/* PARTICIPATION + SLOTS */}
+          <div className="grid grid-cols-3 gap-6">
+            {/* PARTICIPATION */}
+            <div className="col-span-1 border rounded-xl p-4 bg-gray-50 text-sm">
+              <h3 className="font-semibold text-gray-900 mb-2">
+                Participation
+              </h3>
+
+              {constraint ? (
+                <>
+                  <p>
+                    <strong>Type:</strong>{" "}
+                    {constraint.booking_type === "single"
+                      ? "Single"
+                      : "Multiple"}
+                  </p>
+                  <p>
+                    <strong>Team size:</strong>{" "}
+                    {constraint.booking_type === "single"
+                      ? "1"
+                      : constraint.fixed
+                      ? constraint.upper_limit
+                      : `${constraint.lower_limit}–${constraint.upper_limit}`}
+                  </p>
+                </>
+              ) : (
+                <p className="text-gray-500">No rules</p>
+              )}
+            </div>
+
+            {/* SLOTS */}
+            <div className="col-span-2">
+              <h3 className="font-semibold text-gray-900 mb-3 text-sm">
+                Available Slots
+              </h3>
+
+              <div className="grid grid-cols-2 gap-3">
                 {loading ? (
                   <p className="text-gray-500">Loading…</p>
-                ) : details ? (
-                  <>
-                    <div className="flex items-start gap-3">
-                      <MapPin className="w-5 h-5 text-gray-600" />
-                      <div>
-                        <p className="font-medium text-gray-800">Venue</p>
-                        <p className="text-gray-600 text-sm">{details.venue}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <Clock className="w-5 h-5 text-gray-600" />
-                      <div>
-                        <p className="font-medium text-gray-800">Starts</p>
-                        <p className="text-gray-600 text-sm">
-                          {fmt(details.start_datetime)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <Clock className="w-5 h-5 text-gray-600" />
-                      <div>
-                        <p className="font-medium text-gray-800">Ends</p>
-                        <p className="text-gray-600 text-sm">
-                          {fmt(details.end_datetime)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <p className="text-gray-700 leading-relaxed text-sm">
-                      {details.description}
-                    </p>
-                  </>
+                ) : slots.length === 0 ? (
+                  <p className="text-gray-500">No slots available</p>
                 ) : (
-                  <p className="text-gray-500">No details available.</p>
-                )}
-              </div>
-            </section>
-
-            {/* PARTICIPATION CARD */}
-            <section className="mb-10">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Participation Rules
-              </h2>
-
-              <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                {constraint ? (
-                  <>
-                    <p className="text-gray-800 mb-1 text-sm">
-                      <strong className="font-medium">Booking type:</strong>{" "}
-                      {constraint.booking_type === "single"
-                        ? "Single"
-                        : "Multiple"}
-                    </p>
-
-                    {constraint.booking_type === "single" && (
-                      <p className="text-gray-700 text-sm">
-                        Team size: <strong>1</strong>
-                      </p>
-                    )}
-
-                    {constraint.booking_type === "multiple" &&
-                      constraint.fixed && (
-                        <p className="text-gray-700 text-sm">
-                          Team size: <strong>{constraint.upper_limit}</strong>
-                        </p>
-                      )}
-
-                    {constraint.booking_type === "multiple" &&
-                      !constraint.fixed && (
-                        <p className="text-gray-700 text-sm">
-                          Team size range:{" "}
-                          <strong>
-                            {constraint.lower_limit} – {constraint.upper_limit}
-                          </strong>
-                        </p>
-                      )}
-                  </>
-                ) : (
-                  <p className="text-gray-500 text-sm">
-                    No participation rules.
-                  </p>
-                )}
-              </div>
-            </section>
-
-            {/* SLOTS LIST */}
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Available Slots
-              </h2>
-
-              {loading ? (
-                <p className="text-gray-500">Loading slots…</p>
-              ) : slots.length === 0 ? (
-                <p className="text-gray-500">No slots available.</p>
-              ) : (
-                <div className="space-y-3">
-                  {slots.map((s) => {
+                  slots.slice(0, 4).map((s) => {
                     const low =
                       !s.unlimited_participants &&
                       (s.available_participants ?? 0) <= LOW;
 
                     return (
-                      <div
+                      <motion.div
                         key={s.id}
-                        className={`p-4 border rounded-xl shadow-sm bg-white transition ${
+                        whileHover={{ y: -2 }}
+                        className={`p-3 rounded-xl border text-xs ${
                           low
-                            ? "border-red-300 bg-red-50/40"
-                            : "border-gray-200"
+                            ? "border-red-300 bg-red-50"
+                            : "border-gray-200 bg-white"
                         }`}
                       >
-                        <div className="text-sm font-medium text-gray-900">
-                          {s.date} — {s.start_time} to {s.end_time}
+                        <div className="font-medium text-gray-900">
+                          {s.date}
                         </div>
-
-                        <div className="text-xs text-gray-600 mt-1">
+                        <div className="text-gray-600">
+                          {s.start_time} – {s.end_time}
+                        </div>
+                        <div className="text-gray-500 mt-1">
                           {s.unlimited_participants
-                            ? "Unlimited participants"
-                            : `${s.available_participants} spots left`}
+                            ? "Unlimited"
+                            : `${s.available_participants} left`}
                         </div>
-                      </div>
+                      </motion.div>
                     );
-                  })}
-                </div>
-              )}
-            </section>
-
-            {/* BUTTONS */}
-            <motion.button
-              onClick={onAddToCart}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.97 }}
-              className="w-full py-4 rounded-xl bg-purple-700 text-white font-semibold shadow-lg hover:bg-purple-800 transition"
-            >
-              Add to Cart
-            </motion.button>
-
-            <button
-              onClick={onClose}
-              className="w-full mt-3 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium transition hover:bg-gray-50"
-            >
-              Close
-            </button>
+                  })
+                )}
+              </div>
+            </div>
           </div>
+
+          {/* CTA */}
+          <motion.button
+            onClick={onAddToCart}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.96 }}
+            className="mt-8 w-full py-3 rounded-xl bg-purple-700 text-white font-semibold hover:bg-purple-800 transition shadow-md"
+          >
+            Add to Cart
+          </motion.button>
         </motion.div>
       </motion.div>
     </AnimatePresence>
+  );
+}
+
+/* ---------- HELPERS ---------- */
+
+function Info({ icon, label, value }) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="w-9 h-9 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+        {React.cloneElement(icon, { className: "w-5 h-5" })}
+      </div>
+      <div>
+        <p className="text-xs font-medium text-gray-500">{label}</p>
+        <p className="text-sm text-gray-900">{value}</p>
+      </div>
+    </div>
   );
 }

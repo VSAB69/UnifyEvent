@@ -1,16 +1,6 @@
 import React, { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Box,
-  TextField,
-  Checkbox,
-  Typography,
-  Stack,
-} from "@mui/material";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Search, Plus, Users } from "lucide-react";
 import EventService from "../EventService";
 
 export default function OrganiserModal({
@@ -21,35 +11,35 @@ export default function OrganiserModal({
   refreshEvents,
 }) {
   const [allOrganisers, setAllOrganisers] = useState([]);
-  const [assigned, setAssigned] = useState([]); // left side ids
+  const [assigned, setAssigned] = useState([]);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    if (open) {
-      EventService.getOrganisers().then((res) => {
-        setAllOrganisers(res.data);
-        setAssigned(currentOrganiserIds || []);
-      });
-    }
-  }, [open]);
+    if (!open) return;
 
-  const handleAdd = (o) => {
-    if (!assigned.includes(o.id)) {
-      setAssigned([...assigned, o.id]);
-    }
-  };
+    EventService.getOrganisers().then((res) => {
+      setAllOrganisers(res.data || []);
+      setAssigned(currentOrganiserIds || []);
+    });
+  }, [open, currentOrganiserIds]);
 
-  const handleRemoveToggle = (o) => {
-    if (assigned.includes(o.id)) {
-      setAssigned(assigned.filter((id) => id !== o.id));
-    } else {
-      setAssigned([...assigned, o.id]);
-    }
-  };
+  if (!open) return null;
 
-  const filtered = allOrganisers.filter((o) =>
-    o.user_display.toLowerCase().includes(search.toLowerCase())
+  const assignedOrganisers = allOrganisers.filter((o) =>
+    assigned.includes(o.id)
   );
+
+  const availableOrganisers = allOrganisers.filter(
+    (o) =>
+      !assigned.includes(o.id) &&
+      o.user_display.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const toggleAssigned = (id) => {
+    setAssigned((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
 
   const handleSave = async () => {
     await EventService.updateEventJson(eventId, { organisers: assigned });
@@ -58,76 +48,140 @@ export default function OrganiserModal({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg">
-      <DialogTitle>Manage Organisers</DialogTitle>
-      <DialogContent>
-        <Box sx={{ display: "flex", gap: 4 }}>
-          {/* LEFT SIDE */}
-          <Box sx={{ width: "50%", borderRight: "1px solid #ccc", pr: 2 }}>
-            <Typography variant="h6" sx={{ mb: 1 }}>
-              Assigned Organisers
-            </Typography>
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center px-4"
+      >
+        <motion.div
+          initial={{ scale: 0.96, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.96, opacity: 0 }}
+          transition={{ duration: 0.25 }}
+          className="relative w-full max-w-5xl bg-white rounded-3xl shadow-2xl p-8"
+        >
+          {/* CLOSE */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition"
+          >
+            <X className="w-5 h-5 text-gray-600" />
+          </button>
 
-            {allOrganisers
-              .filter((o) => assigned.includes(o.id))
-              .map((o) => (
-                <Box
-                  key={o.id}
-                  sx={{ display: "flex", alignItems: "center", mb: 1 }}
-                >
-                  <Checkbox
-                    checked={true}
-                    onChange={() => handleRemoveToggle(o)}
-                  />
-                  <Typography>{o.user_display}</Typography>
-                </Box>
-              ))}
+          {/* HEADER */}
+          <div className="mb-6">
+            <p className="text-xs font-semibold tracking-widest uppercase text-purple-600">
+              Admin
+            </p>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Manage Organisers
+            </h2>
+          </div>
 
-            {assigned.length === 0 && (
-              <Typography color="text.secondary">
-                No organisers assigned
-              </Typography>
-            )}
-          </Box>
+          {/* MAIN GRID */}
+          <div className="grid grid-cols-2 gap-8">
+            {/* LEFT — ASSIGNED */}
+            <div className="border rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Users className="w-4 h-4 text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Assigned Organisers
+                </h3>
+              </div>
 
-          {/* RIGHT SIDE */}
-          <Box sx={{ width: "50%", pl: 2 }}>
-            <Typography variant="h6" sx={{ mb: 1 }}>
-              Available Organisers
-            </Typography>
+              {assignedOrganisers.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  No organisers assigned yet.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {assignedOrganisers.map((o) => (
+                    <div
+                      key={o.id}
+                      className="flex items-center justify-between rounded-xl border px-4 py-2 hover:bg-gray-50 transition"
+                    >
+                      <span className="text-sm font-medium">
+                        {o.user_display}
+                      </span>
 
-            <TextField
-              fullWidth
-              placeholder="Search organisers..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              sx={{ mb: 2 }}
-            />
+                      <button
+                        onClick={() => toggleAssigned(o.id)}
+                        className="text-xs font-semibold text-red-600 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-            {filtered.map((o) => (
-              <Box
-                key={o.id}
-                sx={{ display: "flex", alignItems: "center", mb: 1 }}
-              >
-                <Typography sx={{ flex: 1 }}>{o.user_display}</Typography>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => handleAdd(o)}
-                >
-                  Add
-                </Button>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSave}>
-          Save
-        </Button>
-      </DialogActions>
-    </Dialog>
+            {/* RIGHT — AVAILABLE */}
+            <div className="border rounded-2xl p-5">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                Available Organisers
+              </h3>
+
+              {/* SEARCH */}
+              <div className="flex items-center gap-2 border rounded-xl px-3 py-2 mb-4">
+                <Search className="w-4 h-4 text-gray-400" />
+                <input
+                  placeholder="Search organisers..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full outline-none text-sm"
+                />
+              </div>
+
+              {availableOrganisers.length === 0 ? (
+                <p className="text-sm text-gray-500">No matching organisers.</p>
+              ) : (
+                <div className="space-y-2">
+                  {availableOrganisers.map((o) => (
+                    <div
+                      key={o.id}
+                      className="flex items-center justify-between rounded-xl border px-4 py-2 hover:bg-gray-50 transition"
+                    >
+                      <span className="text-sm font-medium">
+                        {o.user_display}
+                      </span>
+
+                      <button
+                        onClick={() => toggleAssigned(o.id)}
+                        className="flex items-center gap-1 text-xs font-semibold text-purple-700 hover:underline"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Add
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ACTIONS */}
+          <div className="flex gap-3 mt-8">
+            <button
+              onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition"
+            >
+              Cancel
+            </button>
+
+            <motion.button
+              onClick={handleSave}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="flex-1 py-2.5 rounded-xl bg-purple-600 text-white font-semibold hover:bg-purple-700 transition shadow-md"
+            >
+              Save Changes
+            </motion.button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
