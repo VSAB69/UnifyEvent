@@ -23,7 +23,7 @@ DEBUG = os.getenv("DEBUG", "False") == "True"
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
-    "cadencea-backend.onrender.com",
+    "https://unifyevents-ykp4.onrender.com",
 ]
 
 
@@ -155,7 +155,7 @@ SIMPLE_JWT = {
 CSRF_TRUSTED_ORIGINS = [
     "https://hitansh.pages.dev",
     "https://*.hitansh.pages.dev",
-    "https://cadencea-backend.onrender.com",
+    "https://unifyevents-ykp4.onrender.com",
 ]
 
 CSRF_COOKIE_SECURE = True
