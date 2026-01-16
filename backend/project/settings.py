@@ -23,7 +23,7 @@ DEBUG = os.getenv("DEBUG", "False") == "True"
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
-    "https://unifyevents-ykp4.onrender.com",
+   "unifyevents-ykp4.onrender.com",
 ]
 
 
