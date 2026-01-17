@@ -46,6 +46,8 @@ class EventSerializer(serializers.ModelSerializer):
 
     parent_committee = serializers.CharField(required=False)
     name = serializers.CharField(required=False)
+    slots_count = serializers.SerializerMethodField()
+
 
     parent_event = serializers.PrimaryKeyRelatedField(
         queryset=ParentEvent.objects.all(),
@@ -77,13 +79,18 @@ class EventSerializer(serializers.ModelSerializer):
             'image',       # ✅ add this
             "image_key",
             'constraint_id',
-            'details_id'
+            'details_id',
+            'slots_count'
         ]
         extra_kwargs = {
             "image": {"write_only": True, "required": False}
         }
 
     
+    def get_slots_count(self, obj):
+        return obj.slots.count()
+
+
     def get_image_key(self, obj):
         return obj.image.name if obj.image else None
     

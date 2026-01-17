@@ -21,7 +21,7 @@ const cardVariants = {
 };
 
 /* -------------------------------------------------- */
-/* 🔔 LOCAL DELETE ERROR MODAL */
+/* 🔔 DELETE ERROR MODAL */
 /* -------------------------------------------------- */
 function DeleteEventErrorModal({ open, onClose }) {
   if (!open) return null;
@@ -41,7 +41,6 @@ function DeleteEventErrorModal({ open, onClose }) {
           transition={{ duration: 0.2 }}
           className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6"
         >
-          {/* CLOSE */}
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition"
@@ -49,14 +48,12 @@ function DeleteEventErrorModal({ open, onClose }) {
             <X className="w-5 h-5 text-gray-600" />
           </button>
 
-          {/* ICON */}
           <div className="flex justify-center mb-4">
             <div className="w-12 h-12 flex items-center justify-center rounded-full bg-red-100 text-red-600">
               <AlertCircle className="w-6 h-6" />
             </div>
           </div>
 
-          {/* CONTENT */}
           <h3 className="text-xl font-semibold text-center text-gray-900">
             Unable to Delete Event
           </h3>
@@ -66,7 +63,6 @@ function DeleteEventErrorModal({ open, onClose }) {
             bookings or related data.
           </p>
 
-          {/* ACTION */}
           <div className="mt-6">
             <motion.button
               onClick={onClose}
@@ -82,6 +78,10 @@ function DeleteEventErrorModal({ open, onClose }) {
     </AnimatePresence>
   );
 }
+
+/* -------------------------------------------------- */
+/* MAIN EVENT CARD */
+/* -------------------------------------------------- */
 
 export default function EventCard({
   event,
@@ -134,16 +134,13 @@ export default function EventCard({
         whileHover={{ y: -4 }}
         className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition overflow-hidden"
       >
-        {/* HEADER */}
+        {/* ---------- HEADER ---------- */}
         <div className="p-4 border-b bg-gradient-to-r from-purple-600 to-indigo-600">
           <div className="flex justify-between items-start gap-4">
             <div className="min-w-0">
               <h3 className="text-white text-lg font-semibold truncate">
-                {event.name}
-              </h3>
-              <p className="text-white/80 text-sm truncate">
                 {event.parent_committee || "—"}
-              </p>
+              </h3>
             </div>
 
             <div className="text-right shrink-0">
@@ -157,19 +154,27 @@ export default function EventCard({
           </div>
         </div>
 
-        {/* BODY */}
+        {/* ---------- BODY ---------- */}
         <div className="p-4 space-y-4">
-          {/* Description */}
-          <div className="text-sm text-gray-700 min-h-[48px]">
-            {event.description ? (
-              <p className="line-clamp-3">{event.description}</p>
-            ) : (
-              <p className="text-gray-400 italic">No description provided.</p>
-            )}
+          {/* EVENT NAME BIG & BOLD */}
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+            {event.name}
+          </h2>
+
+          {/* STATUS ROWS */}
+          <div className="space-y-2 text-sm">
+            <StatusRow
+              label="Participation Constraints"
+              isSet={!!event.constraint_id}
+            />
+
+            <StatusRow label="Event Details" isSet={!!event.details_id} />
+
+            <StatusRow label="Event Slots" isSet={event.slots_count > 0} />
           </div>
 
-          {/* ACTIONS */}
-          <div className="grid grid-cols-2 gap-2 pt-2">
+          {/* ---------- ACTIONS ---------- */}
+          <div className="grid grid-cols-2 gap-2 pt-3">
             <ActionBtn primary onClick={() => onEditEvent(event)}>
               <Edit2 className="w-4 h-4" /> Edit
             </ActionBtn>
@@ -202,7 +207,6 @@ export default function EventCard({
               <CheckCircle className="w-4 h-4" /> Attendance
             </ActionBtn>
 
-            {/* ADMIN ONLY — ORGANISERS */}
             {role === "admin" && (
               <ActionBtn onClick={handleOrganisersClick}>
                 <Users className="w-4 h-4" />
@@ -212,7 +216,6 @@ export default function EventCard({
               </ActionBtn>
             )}
 
-            {/* ADMIN ONLY — DELETE */}
             {role === "admin" && (
               <ActionBtn danger onClick={() => setDeleteOpen(true)}>
                 <Trash2 className="w-4 h-4" /> Delete
@@ -222,7 +225,7 @@ export default function EventCard({
         </div>
       </motion.div>
 
-      {/* DELETE CONFIRM MODAL */}
+      {/* DELETE CONFIRM */}
       <DeleteEventModal
         open={deleteOpen}
         event={event}
@@ -231,7 +234,7 @@ export default function EventCard({
         loading={deleting}
       />
 
-      {/* DELETE ERROR MODAL */}
+      {/* DELETE ERROR */}
       <DeleteEventErrorModal
         open={errorOpen}
         onClose={() => setErrorOpen(false)}
@@ -240,7 +243,25 @@ export default function EventCard({
   );
 }
 
-/* ---------- BUTTON ---------- */
+/* ---------- STATUS ROW ---------- */
+function StatusRow({ label, isSet }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-slate-700 font-medium">{label}</span>
+      {isSet ? (
+        <span className="flex items-center gap-1 text-green-600 font-semibold">
+          <CheckCircle className="w-4 h-4" /> Set
+        </span>
+      ) : (
+        <span className="flex items-center gap-1 text-red-500 font-semibold">
+          <AlertCircle className="w-4 h-4" /> Not Set
+        </span>
+      )}
+    </div>
+  );
+}
+
+/* ---------- ACTION BUTTON ---------- */
 function ActionBtn({ children, onClick, primary, danger, green }) {
   const base =
     "flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all w-full";
