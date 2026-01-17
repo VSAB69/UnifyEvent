@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Search, Plus, Users } from "lucide-react";
 import EventService from "../EventService";
@@ -7,21 +7,30 @@ export default function OrganiserModal({
   open,
   onClose,
   eventId,
-  currentOrganiserIds,
+  currentOrganiserIds = [],
   refreshEvents,
 }) {
   const [allOrganisers, setAllOrganisers] = useState([]);
   const [assigned, setAssigned] = useState([]);
   const [search, setSearch] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const loadOrganisers = useCallback(async () => {
+    try {
+      const res = await EventService.getOrganisers();
+      setAllOrganisers(res.data || []);
+      setAssigned(currentOrganiserIds || []);
+    } catch (err) {
+      console.error("Failed to load organisers", err);
+      setError("Failed to load organisers");
+    }
+  }, [currentOrganiserIds]);
 
   useEffect(() => {
     if (!open) return;
-
-    EventService.getOrganisers().then((res) => {
-      setAllOrganisers(res.data || []);
-      setAssigned(currentOrganiserIds || []);
-    });
-  }, [open, currentOrganiserIds]);
+    loadOrganisers();
+  }, [open, loadOrganisers]);
 
   if (!open) return null;
 
@@ -42,9 +51,31 @@ export default function OrganiserModal({
   };
 
   const handleSave = async () => {
-    await EventService.updateEventJson(eventId, { organisers: assigned });
-    refreshEvents();
-    onClose();
+    if (!eventId) {
+      setError("Invalid event ID");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+
+      // 🔥 JSON ONLY (fixes 415)
+      await EventService.updateEventJson(eventId, {
+        organisers: assigned,
+      });
+
+      if (typeof refreshEvents === "function") {
+        await refreshEvents();
+      }
+
+      onClose();
+    } catch (err) {
+      console.error("Failed to save organisers", err);
+      setError("Failed to save organisers. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -82,7 +113,7 @@ export default function OrganiserModal({
 
           {/* MAIN GRID */}
           <div className="grid grid-cols-2 gap-8">
-            {/* LEFT — ASSIGNED */}
+            {/* ASSIGNED */}
             <div className="border rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Users className="w-4 h-4 text-purple-600" />
@@ -118,13 +149,12 @@ export default function OrganiserModal({
               )}
             </div>
 
-            {/* RIGHT — AVAILABLE */}
+            {/* AVAILABLE */}
             <div className="border rounded-2xl p-5">
               <h3 className="text-lg font-semibold text-gray-900 mb-3">
                 Available Organisers
               </h3>
 
-              {/* SEARCH */}
               <div className="flex items-center gap-2 border rounded-xl px-3 py-2 mb-4">
                 <Search className="w-4 h-4 text-gray-400" />
                 <input
@@ -162,6 +192,10 @@ export default function OrganiserModal({
             </div>
           </div>
 
+          {error && (
+            <p className="mt-4 text-sm text-red-600 font-medium">{error}</p>
+          )}
+
           {/* ACTIONS */}
           <div className="flex gap-3 mt-8">
             <button
@@ -173,11 +207,16 @@ export default function OrganiserModal({
 
             <motion.button
               onClick={handleSave}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              className="flex-1 py-2.5 rounded-xl bg-purple-600 text-white font-semibold hover:bg-purple-700 transition shadow-md"
+              disabled={saving}
+              whileHover={!saving ? { scale: 1.03 } : undefined}
+              whileTap={!saving ? { scale: 0.97 } : undefined}
+              className={`flex-1 py-2.5 rounded-xl font-semibold transition shadow-md ${
+                saving
+                  ? "bg-purple-400 cursor-not-allowed"
+                  : "bg-purple-600 hover:bg-purple-700 text-white"
+              }`}
             >
-              Save Changes
+              {saving ? "Saving..." : "Save Changes"}
             </motion.button>
           </div>
         </motion.div>

@@ -1,8 +1,79 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Plus, Edit, Trash2, Calendar, Clock } from "lucide-react";
+import {
+  X,
+  Plus,
+  Edit,
+  Trash2,
+  Calendar,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
 import EventService from "../EventService";
 import EventSlotModal from "./EventSlotModal";
+import DeleteSlotModal from "./DeleteSlotModal";
+
+/* -------------------------------------------------- */
+/* 🔔 LOCAL ERROR ALERT MODAL */
+/* -------------------------------------------------- */
+function SlotErrorModal({ open, onClose }) {
+  if (!open) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center px-4"
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6"
+        >
+          {/* CLOSE */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition"
+          >
+            <X className="w-5 h-5 text-gray-600" />
+          </button>
+
+          {/* ICON */}
+          <div className="flex justify-center mb-4">
+            <div className="w-12 h-12 flex items-center justify-center rounded-full bg-red-100 text-red-600">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+          </div>
+
+          {/* CONTENT */}
+          <h3 className="text-xl font-semibold text-center text-gray-900">
+            Unable to Delete Slot
+          </h3>
+
+          <p className="mt-2 text-sm text-center text-gray-600">
+            Cannot delete slot as bookings are linked to this slot.
+          </p>
+
+          {/* ACTION */}
+          <div className="mt-6">
+            <motion.button
+              onClick={onClose}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="w-full py-2.5 rounded-xl bg-purple-600 text-white font-semibold hover:bg-purple-700 transition shadow-md"
+            >
+              OK
+            </motion.button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
 
 export default function EventSlotsListModal({
   open,
@@ -15,6 +86,12 @@ export default function EventSlotsListModal({
 
   const [slotModalOpen, setSlotModalOpen] = useState(false);
   const [slotIdToEdit, setSlotIdToEdit] = useState(null);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [slotToDelete, setSlotToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const [errorOpen, setErrorOpen] = useState(false);
 
   const fetchSlots = useCallback(async () => {
     if (!eventId) return;
@@ -32,6 +109,24 @@ export default function EventSlotsListModal({
   }, [open, fetchSlots]);
 
   if (!open) return null;
+
+  const handleDeleteConfirm = async () => {
+    if (!slotToDelete) return;
+
+    try {
+      setDeleting(true);
+      await EventService.deleteEventSlot(slotToDelete.id);
+      setDeleteOpen(false);
+      setSlotToDelete(null);
+      fetchSlots();
+    } catch (err) {
+      setDeleteOpen(false);
+      setSlotToDelete(null);
+      setErrorOpen(true);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <>
@@ -145,11 +240,9 @@ export default function EventSlotsListModal({
                       </button>
 
                       <button
-                        onClick={async () => {
-                          if (window.confirm("Delete this slot?")) {
-                            await EventService.deleteEventSlot(s.id);
-                            fetchSlots();
-                          }
+                        onClick={() => {
+                          setSlotToDelete(s);
+                          setDeleteOpen(true);
                         }}
                         className="p-2 rounded-lg hover:bg-red-100 text-red-600 transition"
                       >
@@ -182,6 +275,23 @@ export default function EventSlotsListModal({
         slotId={slotIdToEdit}
         refreshList={fetchSlots}
       />
+
+      {/* DELETE SLOT */}
+      <DeleteSlotModal
+        open={deleteOpen}
+        slot={slotToDelete}
+        loading={deleting}
+        onClose={() => {
+          if (!deleting) {
+            setDeleteOpen(false);
+            setSlotToDelete(null);
+          }
+        }}
+        onConfirm={handleDeleteConfirm}
+      />
+
+      {/* ERROR ALERT */}
+      <SlotErrorModal open={errorOpen} onClose={() => setErrorOpen(false)} />
     </>
   );
 }

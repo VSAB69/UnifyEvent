@@ -17,7 +17,12 @@ const EventService = {
     }),
 
   // JSON update for organisers, constraints, parent_event, etc.
-  updateEventJson: (id, data) => AxiosInstance.put(`/events/${id}/`, data),
+  updateEventJson: (id, data) =>
+    AxiosInstance.put(`/events/${id}/`, data, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }),
 
   updateEvent: (id, data) => AxiosInstance.put(`/events/${id}/`, data),
 
