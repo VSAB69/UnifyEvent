@@ -10,7 +10,7 @@ A complete event management platform built for colleges, featuring:
 * 🎫 **Ticket view + upcoming ticket download system**
 * 🛠 **Admin dashboard for event management** (slots, organisers, constraints, attendance)
 * 🔐 **JWT cookie authentication**
-* 💳 **Payment integration-ready architecture**
+* 💳 **hi integration-ready architecture**
 
 ---
 
