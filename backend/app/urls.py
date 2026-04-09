@@ -30,4 +30,9 @@ urlpatterns = [
         SecureEventImageView.as_view(),
         name="secure-event-image",
     ),
+    path(
+        "health/",
+        health_check,
+        name="health-check",
+    ),
 ]

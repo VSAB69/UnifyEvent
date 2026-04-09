@@ -10,6 +10,14 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 from .models import *
 from .serializers import *
+
+
+from django.http import JsonResponse
+
+def health_check(request):
+    return JsonResponse({"status": "ok"})
+
+
 class EventViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = EventSerializer
