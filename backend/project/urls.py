@@ -9,6 +9,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("", include("app.urls")),
     path('auth/', include('base.urls')),
+    path("api/mobile-auth/", include("mobile_auth.urls")),
 ]
 
 if settings.DEBUG:
