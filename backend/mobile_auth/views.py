@@ -4,7 +4,7 @@ from rest_framework import status, permissions
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
-
+from django.contrib.auth import authenticate
 from base.serializers import UserSerializer
 
 User = get_user_model()
@@ -18,34 +18,21 @@ class MobileLoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        email = request.data.get("email")
         username = request.data.get("username")
         password = request.data.get("password")
 
-        if not password or (not email and not username):
+        if not username or not password:
             return Response(
-                {"error": "Email/username and password are required"},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "Username and password are required"},
+                status=400
             )
 
-        user = None
-
-        # 🔥 Prefer email login
-        if email:
-            try:
-                user_obj = User.objects.get(email=email)
-                user = authenticate(username=user_obj.username, password=password)
-            except User.DoesNotExist:
-                user = None
-
-        # 🔁 Fallback to username
-        elif username:
-            user = authenticate(username=username, password=password)
+        user = authenticate(username=username, password=password)
 
         if not user:
             return Response(
                 {"error": "Invalid credentials"},
-                status=status.HTTP_401_UNAUTHORIZED
+                status=401
             )
 
         refresh = RefreshToken.for_user(user)
@@ -55,7 +42,6 @@ class MobileLoginView(APIView):
             "refresh": str(refresh),
             "user": UserSerializer(user).data
         })
-
 
 # ─────────────────────────────────────────────
 # MOBILE TOKEN REFRESH
