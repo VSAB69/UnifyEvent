@@ -30,6 +30,8 @@ urlpatterns = [
         SecureEventImageView.as_view(),
         name="secure-event-image",
     ),
+
+    path("checkin/qr/", QRCheckinView.as_view()),
     path(
         "health/",
         health_check,

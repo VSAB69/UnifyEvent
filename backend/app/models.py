@@ -322,8 +322,11 @@ class BookedEvent(models.Model):
         return f"BookedEvent #{self.id} — {self.event.name} (x{self.participants_count})"
 
 
+import uuid
+
 class BookedParticipant(models.Model):
-    """All participants for a booked event; attendance tracking."""
+    """All participants for a booked event; attendance tracking with QR."""
+
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="participants")
     booked_event = models.ForeignKey(BookedEvent, on_delete=models.CASCADE, related_name="participants")
 
@@ -331,8 +334,13 @@ class BookedParticipant(models.Model):
     email = models.EmailField(blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
 
+    # Attendance
     arrived = models.BooleanField(default=False)
     checkin_time = models.DateTimeField(blank=True, null=True)
+
+    # 🔥 STEP 1 (NO UNIQUE YET)
+    qr_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    qr_used = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.name} ({'Arrived' if self.arrived else 'Not arrived'})"
