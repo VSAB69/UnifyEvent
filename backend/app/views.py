@@ -454,13 +454,20 @@ class IsBookingOwner(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         return obj.user_id == request.user.id
 
+from decimal import Decimal
+from django.db import transaction
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status
+
+from .models import (
+    Booking, BookedEvent, BookedParticipant,
+    Cart, EventSlot, TempBookTimeslot
+)
+from .serializers import BookingSerializer
+
 
 class BookingViewSet(viewsets.ModelViewSet):
-    """
-    - GET /bookings/          -> list user's bookings
-    - GET /bookings/<id>/     -> detail
-    - POST /bookings/place/   -> convert active cart -> booking
-    """
     serializer_class = BookingSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -472,7 +479,9 @@ class BookingViewSet(viewsets.ModelViewSet):
     def place(self, request):
         user = request.user
 
-        # 1) Load active cart
+        # ─────────────────────────────
+        # 1. LOAD ACTIVE CART
+        # ─────────────────────────────
         try:
             cart = Cart.objects.select_related("owner").prefetch_related(
                 "items__event",
@@ -480,101 +489,130 @@ class BookingViewSet(viewsets.ModelViewSet):
                 "items__temp_timeslot__slot",
             ).get(owner=user, is_active=True)
         except Cart.DoesNotExist:
-            return Response({"detail": "No active cart found."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "No active cart found."}, status=400)
 
         items = list(cart.items.all())
         if not items:
-            return Response({"detail": "Cart is empty."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Cart is empty."}, status=400)
 
-        # 2) Validate each item has slot and participant details correct
+        # ─────────────────────────────
+        # 2. VALIDATE ITEMS
+        # ─────────────────────────────
         for it in items:
-            # require slot
-            if not hasattr(it, "temp_timeslot") or it.temp_timeslot is None:
+            # ✅ Safe temp_timeslot access
+            try:
+                temp_slot = it.temp_timeslot
+            except TempBookTimeslot.DoesNotExist:
                 return Response(
                     {"detail": f"Event '{it.event.name}' has no selected slot."},
-                    status=status.HTTP_400_BAD_REQUEST
+                    status=400
                 )
-            # participants count matches rows
+
+            # ✅ Participants validation
             if it.temp_participants.count() != it.participants_count:
                 return Response(
                     {"detail": f"Event '{it.event.name}' participant details are incomplete."},
-                    status=status.HTTP_400_BAD_REQUEST
+                    status=400
                 )
 
-        # 3) Capacity check for all limited slots
-        #    (We also decrement inside the loop to avoid race; wrapped in atomic)
-        #    We'll re-fetch with select_for_update() to lock rows.
-        #    Build a dict: slot_id -> required_sum
+        # ─────────────────────────────
+        # 3. CAPACITY CHECK (LOCK SLOTS)
+        # ─────────────────────────────
         slot_required = {}
+
         for it in items:
-            slot_id = it.temp_timeslot.slot_id
+            temp_slot = it.temp_timeslot
+            slot_id = temp_slot.slot_id
             slot_required[slot_id] = slot_required.get(slot_id, 0) + it.participants_count
 
-        # lock slots
-        locked_slots = (
-            EventSlot.objects.select_for_update()
-            .filter(id__in=slot_required.keys())
-        )
+        locked_slots = EventSlot.objects.select_for_update().filter(id__in=slot_required.keys())
         slots_by_id = {s.id: s for s in locked_slots}
 
         for sid, needed in slot_required.items():
-            s = slots_by_id[sid]
-            if not s.unlimited_participants:
-                if s.available_participants is None or s.available_participants < needed:
+            slot = slots_by_id.get(sid)
+
+            # ✅ FIX: prevent KeyError crash
+            if not slot:
+                return Response({"detail": "Invalid slot selected."}, status=400)
+
+            if not slot.unlimited_participants:
+                if slot.available_participants is None or slot.available_participants < needed:
                     return Response(
-                        {"detail": f"Slot {s.date} {s.start_time}-{s.end_time} doesn't have enough capacity."},
-                        status=status.HTTP_400_BAD_REQUEST
+                        {
+                            "detail": f"Slot {slot.date} {slot.start_time}-{slot.end_time} "
+                                      f"doesn't have enough capacity."
+                        },
+                        status=400
                     )
 
-        # 4) Create booking + lines; decrement capacity; copy participants
-        booking = Booking.objects.create(user=user, status="confirmed", payment_status=None, total_amount=0)
+        # ─────────────────────────────
+        # 4. CREATE BOOKING
+        # ─────────────────────────────
+        booking = Booking.objects.create(
+            user=user,
+            status="confirmed",
+            payment_status=None,
+            total_amount=Decimal(0)
+        )
 
-        total = 0
+        total = Decimal(0)
+
+        # ─────────────────────────────
+        # 5. CREATE BOOKED EVENTS + PARTICIPANTS
+        # ─────────────────────────────
         for it in items:
-            slot = slots_by_id[it.temp_timeslot.slot_id]
-            unit = it.event.price
-            line_total = unit * it.participants_count
+            temp_slot = it.temp_timeslot
+            slot = slots_by_id.get(temp_slot.slot_id)
 
-            be = BookedEvent.objects.create(
+            # ✅ SAFE DECIMAL HANDLING
+            unit_price = Decimal(it.event.price or 0)
+            participants_count = Decimal(it.participants_count)
+            line_total = unit_price * participants_count
+
+            booked_event = BookedEvent.objects.create(
                 booking=booking,
                 event=it.event,
                 slot=slot,
-                participants_count=it.participants_count,
-                unit_price=unit,
+                participants_count=int(participants_count),
+                unit_price=unit_price,
                 line_total=line_total,
             )
+
             total += line_total
 
-            # participants
+            # ✅ CREATE PARTICIPANTS SAFELY
             for p in it.temp_participants.all():
                 BookedParticipant.objects.create(
                     booking=booking,
-                    booked_event=be,
+                    booked_event=booked_event,
                     name=p.name,
-                    email=p.email,
-                    phone_number=p.phone_number,
+                    email=p.email if p.email else None,
+                    phone_number=p.phone_number if p.phone_number else None,
                     arrived=False,
                     checkin_time=None,
                 )
 
-            # decrement capacity & save
+            # ✅ UPDATE SLOT CAPACITY
             if not slot.unlimited_participants:
-                slot.booked_participants += it.participants_count
-            slot.save()  # will recompute available_participants & available
+                slot.booked_participants += int(participants_count)
 
-        # 5) finalize booking total and deactivate cart
+            slot.save()
+
+        # ─────────────────────────────
+        # 6. FINALIZE BOOKING
+        # ─────────────────────────────
         booking.total_amount = total
         booking.save(update_fields=["total_amount"])
 
+        # deactivate cart
         cart.is_active = False
         cart.save(update_fields=["is_active"])
 
-        # (Optional) you can delete temp rows; I suggest to keep for audit or clear here:
-        # TempBook.objects.filter(cart_item__cart=cart).delete()
-        # TempBookTimeslot.objects.filter(cart_item__cart=cart).delete()
-
-        ser = BookingSerializer(booking)
-        return Response(ser.data, status=status.HTTP_201_CREATED)
+        # ─────────────────────────────
+        # 7. RESPONSE
+        # ─────────────────────────────
+        serializer = BookingSerializer(booking)
+        return Response(serializer.data, status=201)
 
 class BookedParticipantViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -648,8 +686,6 @@ class BookedEventViewSet(viewsets.ReadOnlyModelViewSet):
         return BookedEvent.objects.filter(booking__user=user)
 
 
-
-
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
@@ -662,16 +698,23 @@ class QRCheckinView(APIView):
 
     def post(self, request):
         token = request.data.get("qr_token")
+        scanned_at = request.data.get("scanned_at")  # optional (offline support)
 
         if not token:
-            return Response({"error": "Missing QR token"}, status=400)
+            return Response({
+                "status": "error",
+                "message": "Missing QR token"
+            }, status=400)
 
         try:
             participant = BookedParticipant.objects.select_related(
                 "booked_event__event"
             ).get(qr_token=token)
         except BookedParticipant.DoesNotExist:
-            return Response({"error": "Invalid QR"}, status=404)
+            return Response({
+                "status": "invalid",
+                "message": "Invalid QR"
+            }, status=404)
 
         user = request.user
 
@@ -679,17 +722,24 @@ class QRCheckinView(APIView):
         if user.role == "organiser":
             allowed = participant.booked_event.event.organisers.filter(user=user).exists()
             if not allowed:
-                return Response({"error": "Not allowed"}, status=403)
+                return Response({
+                    "status": "forbidden",
+                    "message": "Not allowed"
+                }, status=403)
 
         if user.role not in ["admin", "organiser"]:
-            return Response({"error": "Not allowed"}, status=403)
+            return Response({
+                "status": "forbidden",
+                "message": "Not allowed"
+            }, status=403)
 
-        # ❌ Already checked-in
+        # 🔁 IDEMPOTENT CHECK-IN
         if participant.qr_used or participant.arrived:
             return Response({
-                "error": "Already checked-in",
+                "status": "already_checked_in",
                 "participant_name": participant.name,
-            }, status=400)
+                "checkin_time": participant.checkin_time,
+            }, status=200)
 
         # ✅ Mark attendance
         participant.arrived = True
@@ -698,9 +748,10 @@ class QRCheckinView(APIView):
         participant.save(update_fields=["arrived", "qr_used", "checkin_time"])
 
         return Response({
-            "message": "Check-in successful",
+            "status": "checked_in",
             "participant_name": participant.name,
-        })
+            "checkin_time": participant.checkin_time,
+        }, status=200)
 
 
 class QRPreviewView(APIView):
@@ -710,7 +761,10 @@ class QRPreviewView(APIView):
         token = request.data.get("qr_token")
 
         if not token:
-            return Response({"error": "Missing QR token"}, status=400)
+            return Response({
+                "status": "error",
+                "message": "Missing QR token"
+            }, status=400)
 
         try:
             participant = BookedParticipant.objects.select_related(
@@ -718,7 +772,10 @@ class QRPreviewView(APIView):
                 "booked_event__slot"
             ).get(qr_token=token)
         except BookedParticipant.DoesNotExist:
-            return Response({"error": "Invalid QR"}, status=404)
+            return Response({
+                "status": "invalid",
+                "message": "Invalid QR"
+            }, status=404)
 
         user = request.user
 
@@ -726,26 +783,34 @@ class QRPreviewView(APIView):
         if user.role == "organiser":
             allowed = participant.booked_event.event.organisers.filter(user=user).exists()
             if not allowed:
-                return Response({"error": "Not allowed"}, status=403)
+                return Response({
+                    "status": "forbidden",
+                    "message": "Not allowed"
+                }, status=403)
 
         if user.role not in ["admin", "organiser"]:
-            return Response({"error": "Not allowed"}, status=403)
+            return Response({
+                "status": "forbidden",
+                "message": "Not allowed"
+            }, status=403)
 
         slot = participant.booked_event.slot
 
-        # ❌ Already checked-in (IMPORTANT FIX)
+        # 🔁 Already checked-in (clean response)
         if participant.qr_used or participant.arrived:
             return Response({
-                "already_checked_in": True,
+                "status": "already_checked_in",
                 "participant_name": participant.name,
                 "event_name": participant.booked_event.event.name,
-                "slot": f"{slot.date} | {slot.start_time} - {slot.end_time}"
+                "slot": f"{slot.date} | {slot.start_time} - {slot.end_time}",
+                "checkin_time": participant.checkin_time,
             }, status=200)
 
         # ✅ Normal preview
         return Response({
+            "status": "valid",
             "participant_name": participant.name,
             "event_name": participant.booked_event.event.name,
             "slot": f"{slot.date} | {slot.start_time} - {slot.end_time}",
             "qr_token": str(participant.qr_token)
-        })
+        }, status=200)

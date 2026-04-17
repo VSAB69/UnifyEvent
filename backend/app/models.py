@@ -2,6 +2,7 @@
 
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 from django.core.exceptions import ValidationError
 
 class Organiser(models.Model):
@@ -341,6 +342,7 @@ class BookedParticipant(models.Model):
     # 🔥 STEP 1 (NO UNIQUE YET)
     qr_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     qr_used = models.BooleanField(default=False)
+    qr_generated_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.name} ({'Arrived' if self.arrived else 'Not arrived'})"

@@ -298,14 +298,14 @@ class BookedParticipantSerializer(serializers.ModelSerializer):
             "phone_number",
             "arrived",
             "checkin_time",
-            "qr_token",   # 🔥 ADD THIS
+            "qr_token",
         ]
         read_only_fields = [
             "booking",
             "booked_event",
             "arrived",
             "checkin_time",
-            "qr_token",   # 🔥 ADD THIS
+            "qr_token",
         ]
 
 class BookedEventSerializer(serializers.ModelSerializer):
