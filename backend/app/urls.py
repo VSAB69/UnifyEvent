@@ -21,8 +21,11 @@ router.register("booked-participants", BookedParticipantViewSet, basename="booke
 router.register("bookings", BookingViewSet, basename="bookings")
 router.register("booked-events", BookedEventViewSet, basename="booked-events")
 
+
 urlpatterns = [
     *router.urls,
+
+    path("checkin/qr-preview/", QRPreviewView.as_view()),
 
     # 🔐 Secure R2 Event Image Gateway
     path(

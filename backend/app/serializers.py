@@ -284,57 +284,6 @@ class CartSerializer(serializers.ModelSerializer):
 
 
 
-# events/serializers.py (append)
-
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
-from django.utils import timezone
-from rest_framework.response import Response
-from app.models import BookedParticipant
-
-class QRCheckinView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        token = request.data.get("qr_token")
-
-        if not token:
-            return Response({"error": "Missing QR token"}, status=400)
-
-        try:
-            participant = BookedParticipant.objects.select_related(
-                "booked_event__event"
-            ).get(qr_token=token)
-        except BookedParticipant.DoesNotExist:
-            return Response({"error": "Invalid QR"}, status=404)
-
-        user = request.user
-
-        # 🔐 permission
-        if user.role == "organiser":
-            allowed = participant.booked_event.event.organisers.filter(user=user).exists()
-            if not allowed:
-                return Response({"error": "Not allowed"}, status=403)
-
-        if user.role not in ["admin", "organiser"]:
-            return Response({"error": "Not allowed"}, status=403)
-
-        # ❌ already used
-        if participant.qr_used or participant.arrived:
-            return Response({"error": "Already checked-in"}, status=400)
-
-        # ✅ mark attendance
-        participant.arrived = True
-        participant.qr_used = True
-        participant.checkin_time = timezone.now()
-        participant.save(update_fields=["arrived", "qr_used", "checkin_time"])
-
-        return Response({
-            "message": "Check-in successful",
-            "name": participant.name,
-        })
-
-
 class BookedParticipantSerializer(serializers.ModelSerializer):
     qr_token = serializers.UUIDField(read_only=True)
 

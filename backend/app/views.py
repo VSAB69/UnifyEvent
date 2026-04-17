@@ -650,12 +650,12 @@ class BookedEventViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 
-
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from rest_framework.response import Response
 from app.models import BookedParticipant
+
 
 class QRCheckinView(APIView):
     permission_classes = [IsAuthenticated]
@@ -675,7 +675,7 @@ class QRCheckinView(APIView):
 
         user = request.user
 
-        # 🔐 permission
+        # 🔐 Permission check
         if user.role == "organiser":
             allowed = participant.booked_event.event.organisers.filter(user=user).exists()
             if not allowed:
@@ -684,11 +684,14 @@ class QRCheckinView(APIView):
         if user.role not in ["admin", "organiser"]:
             return Response({"error": "Not allowed"}, status=403)
 
-        # ❌ already used
+        # ❌ Already checked-in
         if participant.qr_used or participant.arrived:
-            return Response({"error": "Already checked-in"}, status=400)
+            return Response({
+                "error": "Already checked-in",
+                "participant_name": participant.name,
+            }, status=400)
 
-        # ✅ mark attendance
+        # ✅ Mark attendance
         participant.arrived = True
         participant.qr_used = True
         participant.checkin_time = timezone.now()
@@ -696,5 +699,53 @@ class QRCheckinView(APIView):
 
         return Response({
             "message": "Check-in successful",
-            "name": participant.name,
+            "participant_name": participant.name,
+        })
+
+
+class QRPreviewView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        token = request.data.get("qr_token")
+
+        if not token:
+            return Response({"error": "Missing QR token"}, status=400)
+
+        try:
+            participant = BookedParticipant.objects.select_related(
+                "booked_event__event",
+                "booked_event__slot"
+            ).get(qr_token=token)
+        except BookedParticipant.DoesNotExist:
+            return Response({"error": "Invalid QR"}, status=404)
+
+        user = request.user
+
+        # 🔐 Permission check
+        if user.role == "organiser":
+            allowed = participant.booked_event.event.organisers.filter(user=user).exists()
+            if not allowed:
+                return Response({"error": "Not allowed"}, status=403)
+
+        if user.role not in ["admin", "organiser"]:
+            return Response({"error": "Not allowed"}, status=403)
+
+        slot = participant.booked_event.slot
+
+        # ❌ Already checked-in (IMPORTANT FIX)
+        if participant.qr_used or participant.arrived:
+            return Response({
+                "already_checked_in": True,
+                "participant_name": participant.name,
+                "event_name": participant.booked_event.event.name,
+                "slot": f"{slot.date} | {slot.start_time} - {slot.end_time}"
+            }, status=200)
+
+        # ✅ Normal preview
+        return Response({
+            "participant_name": participant.name,
+            "event_name": participant.booked_event.event.name,
+            "slot": f"{slot.date} | {slot.start_time} - {slot.end_time}",
+            "qr_token": str(participant.qr_token)
         })
