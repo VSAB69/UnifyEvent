@@ -56,7 +56,7 @@ export default function EventDetailsPage() {
       setLoading(true);
       try {
         const eRes = await ParticipantService.getAllEvents();
-        const ev = eRes.data.find((e) => e.id == eventId);
+        const ev = eRes.data.find((e) => e.id === eventId);
         setEvent(ev);
 
         if (ev?.constraint_id) {

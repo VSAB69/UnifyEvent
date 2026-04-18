@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Clock, Users, AlertTriangle, Calendar, Zap, Activity } from "lucide-react";
+import { X, AlertTriangle, Activity } from "lucide-react";
 import EventService from "../EventService";
 
 export default function EventSlotModal({ open, onClose, eventId, slotId, refreshList }) {

@@ -8,7 +8,6 @@ import {
   Calendar,
   Clock,
   AlertCircle,
-  Activity,
   Terminal,
 } from "lucide-react";
 import EventService from "../EventService";

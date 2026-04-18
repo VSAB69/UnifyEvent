@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Image as ImageIcon, IndianRupee, Zap, Terminal, Activity } from "lucide-react";
+import { X, Image as ImageIcon, IndianRupee, Terminal } from "lucide-react";
 import EventService from "../EventService";
 
 export default function EventModal({ open, onClose, refreshEvents, editEventData }) {

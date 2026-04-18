@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, X, AlertTriangle } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
 export default function DeleteSlotModal({ open, onClose, onConfirm, slot, loading }) {
   if (!open) return null;

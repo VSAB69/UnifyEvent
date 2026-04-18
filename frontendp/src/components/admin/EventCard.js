@@ -1,18 +1,14 @@
 // src/components/admin/EventCard.jsx
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { 
-  Trash2, 
   Edit2, 
   Layers, 
   Calendar, 
   Users, 
   CheckCircle, 
   AlertCircle, 
-  X, 
   Terminal, 
-  ShieldCheck, 
-  Ticket,
   Activity // Added missing import
 } from "lucide-react";
 import EventService from "./EventService";

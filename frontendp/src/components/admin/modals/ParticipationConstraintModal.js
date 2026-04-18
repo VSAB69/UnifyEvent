@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Lock, Layers, Users, Zap } from "lucide-react";
+import { X, Lock, Layers, Users} from "lucide-react";
 import EventService from "../EventService";
 
 export default function ParticipationConstraintModal({ open, onClose, eventId, constraintId, refreshEvents }) {

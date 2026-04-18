@@ -3,16 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   ArrowUpRight, 
   Sparkles, 
-  Zap, 
-  Users, 
-  ShieldCheck, 
+  Zap,  
   Calendar, 
   Clock, 
   MapPin, 
   UserPlus 
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom"; // Added useNavigate
-import { useAuth } from "../../context/useAuth";
 import ParticipantService from "./ParticipantService";
 
 // Modals
@@ -23,7 +20,6 @@ import SlotPickModal from "./modals/SlotPickModal";
 export default function ParentEventEventsPage() {
   const { parentId } = useParams();
   const navigate = useNavigate(); // Hook for navigation
-  const { user, loading } = useAuth();
 
   const [events, setEvents] = useState([]);
   const [parentName, setParentName] = useState("");
@@ -98,22 +94,6 @@ export default function ParentEventEventsPage() {
         .catch(() => {});
     });
   }, [events, imageUrls]);
-
-  const startAddToCart = async (ev) => {
-    if (loading || !user) return;
-    const constraintData = eventDataMap[ev.id]?.constraint;
-    
-    setSession({ ...initialSession, event: ev, constraint: constraintData });
-    
-    if (!constraintData || constraintData.booking_type === "single") {
-      setOpenDetails(true);
-    } else if (constraintData.fixed) {
-      setSession((s) => ({ ...s, count: constraintData.upper_limit || 1 }));
-      setOpenDetails(true);
-    } else {
-      setOpenCount(true);
-    }
-  };
 
   const finishParticipants = (list) => {
     setSession((s) => ({ ...s, participants: list }));

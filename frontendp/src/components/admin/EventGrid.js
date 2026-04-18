@@ -1,7 +1,7 @@
 // src/components/admin/EventGrid.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Filter, Activity, Zap, Terminal } from "lucide-react";
+import { Plus, Search, Filter, Zap } from "lucide-react";
 
 import { useAuth } from "../../context/useAuth";
 import { useNavigate } from "react-router-dom";

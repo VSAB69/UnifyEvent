@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, X, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
 export default function DeleteEventModal({ open, onClose, onConfirm, event }) {
   if (!open) return null;
