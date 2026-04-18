@@ -130,7 +130,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [nav, location.pathname]);
 
-  const loginUser = async (username, password) => {
+  const loginUser = useCallback(async (username, password) => {
     try {
       setLoading(true);
       const data = await login(username, password);
@@ -147,9 +147,9 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [nav, showAlert]);
 
-  const logoutUser = async () => {
+  const logoutUser = useCallback(async () => {
     try {
       await logout();
     } catch (error) {
@@ -158,9 +158,9 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       nav("/login", { replace: true });
     }
-  };
+  }, [nav]);
 
-  const registerUser = async (
+  const registerUser = useCallback(async (
     username,
     email,
     password,
@@ -195,34 +195,33 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [nav, showAlert]);
 
   useEffect(() => {
     get_authenticated_user();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [get_authenticated_user]);
 
   const value = useMemo(
-  () => ({
-    user,
-    loading,
-    authChecked,
-    isAuthenticated: !!user,
-    loginUser,
-    logoutUser,
-    registerUser,
-    showAlert,
-  }),
-  [
-    user,
-    loading,
-    authChecked,
-    showAlert,
-    loginUser,
-    logoutUser,
-    registerUser,
-  ]
-);
+    () => ({
+      user,
+      loading,
+      authChecked,
+      isAuthenticated: !!user,
+      loginUser,
+      logoutUser,
+      registerUser,
+      showAlert,
+    }),
+    [
+      user,
+      loading,
+      authChecked,
+      showAlert,
+      loginUser,
+      logoutUser,
+      registerUser,
+    ]
+  );
 
   return (
     <AuthContext.Provider value={value}>
@@ -247,4 +246,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
