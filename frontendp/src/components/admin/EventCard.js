@@ -1,104 +1,39 @@
+// src/components/admin/EventCard.jsx
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Trash2,
-  Edit2,
-  Layers,
-  Calendar,
-  Users,
-  CheckCircle,
-  AlertCircle,
-  X,
+import { 
+  Trash2, 
+  Edit2, 
+  Layers, 
+  Calendar, 
+  Users, 
+  CheckCircle, 
+  AlertCircle, 
+  X, 
+  Terminal, 
+  ShieldCheck, 
+  Ticket,
+  Activity // Added missing import
 } from "lucide-react";
 import EventService from "./EventService";
 import DeleteEventModal from "./modals/DeleteEventModal";
 import { useAuth } from "../../context/useAuth";
 
-/* ---------------- Animations ---------------- */
-const cardVariants = {
-  hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0 },
-};
-
-/* -------------------------------------------------- */
-/* 🔔 DELETE ERROR MODAL */
-/* -------------------------------------------------- */
-function DeleteEventErrorModal({ open, onClose }) {
-  if (!open) return null;
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center px-4"
-      >
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6"
-        >
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition"
-          >
-            <X className="w-5 h-5 text-gray-600" />
-          </button>
-
-          <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 flex items-center justify-center rounded-full bg-red-100 text-red-600">
-              <AlertCircle className="w-6 h-6" />
-            </div>
-          </div>
-
-          <h3 className="text-xl font-semibold text-center text-gray-900">
-            Unable to Delete Event
-          </h3>
-
-          <p className="mt-2 text-sm text-center text-gray-600">
-            This event cannot be deleted because it is linked to existing
-            bookings or related data.
-          </p>
-
-          <div className="mt-6">
-            <motion.button
-              onClick={onClose}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              className="w-full py-2.5 rounded-xl bg-purple-600 text-white font-semibold hover:bg-purple-700 transition shadow-md"
-            >
-              OK
-            </motion.button>
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
-  );
-}
-
-/* -------------------------------------------------- */
-/* MAIN EVENT CARD */
-/* -------------------------------------------------- */
-
-export default function EventCard({
-  event,
-  onAddConstraints,
-  onEditConstraints,
-  onAddDetails,
-  onEditDetails,
-  onAddOrganisers,
-  onEditOrganisers,
-  onEditEvent,
-  onOpenSlots,
-  onOpenAttendance,
-  onDelete,
+export default function EventCard({ 
+  event, 
+  onAddConstraints, 
+  onEditConstraints, 
+  onAddDetails, 
+  onEditDetails, 
+  onAddOrganisers, 
+  onEditOrganisers, 
+  onEditEvent, 
+  onOpenSlots, 
+  onOpenAttendance, 
+  onDelete 
 }) {
   const { user } = useAuth();
   const role = user?.role;
-
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
@@ -112,176 +47,107 @@ export default function EventCard({
     } catch {
       setDeleteOpen(false);
       setErrorOpen(true);
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const handleOrganisersClick = () => {
-    if (event.organisers && event.organisers.length > 0) {
-      onEditOrganisers(event.id, event.organisers);
-    } else {
-      onAddOrganisers(event.id);
+    } finally { 
+      setDeleting(false); 
     }
   };
 
   return (
     <>
       <motion.div
-        variants={cardVariants}
-        initial="hidden"
-        animate="show"
-        whileHover={{ y: -4 }}
-        className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition overflow-hidden"
+        whileHover={{ y: -8, borderColor: "rgba(247, 37, 133, 0.4)" }}
+        className="bg-[#0a0a0a] border-2 border-white/5 rounded-[35px] overflow-hidden flex flex-col h-full shadow-2xl transition-all duration-300"
       >
-        {/* ---------- HEADER ---------- */}
-        <div className="p-4 border-b bg-gradient-to-r from-purple-600 to-indigo-600">
-          <div className="flex justify-between items-start gap-4">
-            <div className="min-w-0">
-              <h3 className="text-white text-lg font-semibold truncate">
-                {event.parent_committee || "—"}
-              </h3>
+        {/* Header Section */}
+        <div className="p-6 bg-white/[0.02] border-b border-white/5 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+            <Terminal size={80} />
+          </div>
+          <div className="flex justify-between items-start mb-4">
+            <div className="bg-white/5 px-4 py-1 rounded-full border border-white/10">
+              <span className="text-[10px] font-black text-[#4CC9F0] uppercase tracking-widest">{event.parent_committee || "UNASSIGNED"}</span>
             </div>
-
-            <div className="text-right shrink-0">
-              <p className="text-white font-semibold">
-                ₹{Number(event.price || 0).toFixed(2)}
-              </p>
-              <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-white/20 text-white">
-                {event.exclusivity ? "Exclusive" : "Open"}
+            <div className="text-right">
+              <p className="text-2xl font-[1000] italic text-white leading-none tracking-tighter">₹{Number(event.price).toFixed(0)}</p>
+              <span className={`text-[8px] font-black uppercase tracking-widest ${event.exclusivity ? 'text-[#F72585]' : 'text-white/40'}`}>
+                {event.exclusivity ? "★ Exclusive" : "Public_Node"}
               </span>
             </div>
           </div>
-        </div>
-
-        {/* ---------- BODY ---------- */}
-        <div className="p-4 space-y-4">
-          {/* EVENT NAME BIG & BOLD */}
-          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+          <h2 className="text-3xl font-[1000] uppercase tracking-tighter text-white leading-tight mb-2 truncate">
             {event.name}
           </h2>
+        </div>
 
-          {/* STATUS ROWS */}
-          <div className="space-y-2 text-sm">
-            <StatusRow
-              label="Participation Constraints"
-              isSet={!!event.constraint_id}
-            />
-
-            <StatusRow label="Event Details" isSet={!!event.details_id} />
-
-            <StatusRow label="Event Slots" isSet={event.slots_count > 0} />
+        {/* Status Snapshot */}
+        <div className="p-6 space-y-3 flex-1">
+          <div className="grid grid-cols-1 gap-2">
+            <StatusChip label="CONSTRAINTS" isSet={!!event.constraint_id} color="#9155FD" />
+            <StatusChip label="DETAILS_LOG" isSet={!!event.details_id} color="#4CC9F0" />
+            <StatusChip label="SLOT_SECTORS" isSet={event.slots_count > 0} color="#00FF41" />
           </div>
+        </div>
 
-          {/* ---------- ACTIONS ---------- */}
-          <div className="grid grid-cols-2 gap-2 pt-3">
-            <ActionBtn primary onClick={() => onEditEvent(event)}>
-              <Edit2 className="w-4 h-4" /> Edit
-            </ActionBtn>
-
-            <ActionBtn
-              onClick={() =>
-                event.constraint_id
-                  ? onEditConstraints(event.constraint_id, event.id)
-                  : onAddConstraints(event.id)
-              }
-            >
-              <Layers className="w-4 h-4" /> Constraints
-            </ActionBtn>
-
-            <ActionBtn
-              onClick={() =>
-                event.details_id
-                  ? onEditDetails(event.details_id, event.id)
-                  : onAddDetails(event.id)
-              }
-            >
-              <Calendar className="w-4 h-4" /> Details
-            </ActionBtn>
-
-            <ActionBtn onClick={() => onOpenSlots(event.id, event.name)}>
-              <Calendar className="w-4 h-4" /> Slots
-            </ActionBtn>
-
-            <ActionBtn green onClick={() => onOpenAttendance(event.id)}>
-              <CheckCircle className="w-4 h-4" /> Attendance
-            </ActionBtn>
-
-            {role === "admin" && (
-              <ActionBtn onClick={handleOrganisersClick}>
-                <Users className="w-4 h-4" />
-                {event.organisers?.length
-                  ? "Edit Organisers"
-                  : "Add Organisers"}
-              </ActionBtn>
-            )}
-
-            {role === "admin" && (
-              <ActionBtn danger onClick={() => setDeleteOpen(true)}>
-                <Trash2 className="w-4 h-4" /> Delete
-              </ActionBtn>
-            )}
-          </div>
+        {/* Action Grid */}
+        <div className="p-6 pt-0 grid grid-cols-2 gap-3">
+          <AdminBtn color="#FFFFFF" onClick={() => onEditEvent(event)}><Edit2 size={14} /> EDIT</AdminBtn>
+          <AdminBtn color="#9155FD" onClick={() => event.constraint_id ? onEditConstraints(event.constraint_id, event.id) : onAddConstraints(event.id)}><Layers size={14} /> LIMITS</AdminBtn>
+          <AdminBtn color="#4CC9F0" onClick={() => event.details_id ? onEditDetails(event.details_id, event.id) : onAddDetails(event.id)}><Calendar size={14} /> INFO</AdminBtn>
+          <AdminBtn color="#00FF41" onClick={() => onOpenSlots(event.id, event.name)}><Activity size={14} /> SLOTS</AdminBtn>
+          <AdminBtn color="#F72585" onClick={() => onOpenAttendance(event.id)} full><CheckCircle size={14} /> ATTENDANCE</AdminBtn>
+          {role === "admin" && (
+            <AdminBtn color="#FFFFFF" onClick={() => event.organisers?.length ? onEditOrganisers(event.id, event.organisers) : onAddOrganisers(event.id)} full><Users size={14} /> STAFF</AdminBtn>
+          )}
+          {role === "admin" && (
+            <button onClick={() => setDeleteOpen(true)} className="col-span-2 mt-2 py-3 rounded-2xl bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">
+              PURGE_NODE
+            </button>
+          )}
         </div>
       </motion.div>
 
-      {/* DELETE CONFIRM */}
-      <DeleteEventModal
-        open={deleteOpen}
-        event={event}
-        onClose={() => setDeleteOpen(false)}
-        onConfirm={handleDeleteConfirm}
-        loading={deleting}
-      />
-
-      {/* DELETE ERROR */}
-      <DeleteEventErrorModal
-        open={errorOpen}
-        onClose={() => setErrorOpen(false)}
-      />
+      <DeleteEventModal open={deleteOpen} event={event} onClose={() => setDeleteOpen(false)} onConfirm={handleDeleteConfirm} loading={deleting} />
+      <DeleteEventErrorModal open={errorOpen} onClose={() => setErrorOpen(false)} />
     </>
   );
 }
 
-/* ---------- STATUS ROW ---------- */
-function StatusRow({ label, isSet }) {
+function StatusChip({ label, isSet, color }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-slate-700 font-medium">{label}</span>
+    <div className="flex items-center justify-between px-4 py-2 bg-white/[0.02] border border-white/5 rounded-xl">
+      <span className="text-[9px] font-black text-white/30 uppercase tracking-widest">{label}</span>
       {isSet ? (
-        <span className="flex items-center gap-1 text-green-600 font-semibold">
-          <CheckCircle className="w-4 h-4" /> Set
-        </span>
+        <CheckCircle size={12} style={{ color }} className="stroke-[3px]" />
       ) : (
-        <span className="flex items-center gap-1 text-red-500 font-semibold">
-          <AlertCircle className="w-4 h-4" /> Not Set
-        </span>
+        <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
       )}
     </div>
   );
 }
 
-/* ---------- ACTION BUTTON ---------- */
-function ActionBtn({ children, onClick, primary, danger, green }) {
-  const base =
-    "flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all w-full";
-
-  const styles = primary
-    ? "bg-purple-600 text-white hover:bg-purple-700 shadow-sm"
-    : green
-    ? "bg-green-600 text-white hover:bg-green-700"
-    : danger
-    ? "bg-red-100 text-red-700 border border-red-300 hover:bg-red-200"
-    : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-100";
-
+function AdminBtn({ children, onClick, color, full }) {
   return (
     <motion.button
-      whileTap={{ scale: 0.96 }}
-      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.95 }}
       onClick={onClick}
-      className={`${base} ${styles}`}
+      style={{ borderColor: `${color}20` }}
+      className={`flex items-center justify-center gap-2 py-3 border-2 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all ${full ? 'col-span-2' : ''}`}
     >
       {children}
     </motion.button>
+  );
+}
+
+function DeleteEventErrorModal({ open, onClose }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-[#0a0a0a] border-2 border-[#F72585] rounded-[40px] p-10 max-w-md w-full text-center">
+        <AlertCircle size={60} className="text-[#F72585] mx-auto mb-6" />
+        <h3 className="text-2xl font-[1000] uppercase tracking-tighter text-white mb-4">Integrity_Violation</h3>
+        <p className="text-xs font-bold text-white/40 uppercase tracking-widest leading-relaxed mb-8">Node cannot be purged while active dependencies (bookings) exist in the registry.</p>
+        <button onClick={onClose} className="w-full py-4 rounded-2xl bg-white text-black font-black uppercase tracking-widest text-xs">Acknowledge</button>
+      </motion.div>
+    </div>
   );
 }

@@ -1,8 +1,8 @@
-// src/components/NavBar.jsx
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/useAuth";
+import LogoutConfirmModal from "./modals/LogoutConfirmModal";
 
 import {
   Menu,
@@ -13,41 +13,23 @@ import {
   ShoppingCart,
   Home as HomeIcon,
   Ticket,
+  Search,
+  X,
+  Activity,
+  ShieldAlert,
+  Power
 } from "lucide-react";
 
 function getNavItems(user) {
   if (!user) return [];
-
   const shared = [
-    { text: "Home", path: "/home", icon: <HomeIcon className="w-5 h-5" /> },
-    {
-      text: "Events",
-      path: "/parent-events",
-      icon: <BookOpen className="w-5 h-5" />,
-    },
-    {
-      text: "My Bookings",
-      path: "/my-bookings",
-      icon: <Ticket className="w-5 h-5" />,
-    },
-    {
-      text: "Cart",
-      path: "/cart",
-      icon: <ShoppingCart className="w-5 h-5" />,
-    },
+    { text: "HOME", path: "/home", icon: <HomeIcon className="w-4 h-4" /> },
+    { text: "EVENTS", path: "/parent-events", icon: <BookOpen className="w-4 h-4" /> },
+    { text: "MY BOOKINGS", path: "/my-bookings", icon: <Ticket className="w-4 h-4" /> },
   ];
-
   if (user.role === "admin" || user.role === "organiser") {
-    return [
-      ...shared,
-      {
-        text: "Manage",
-        path: "/events",
-        icon: <Layers className="w-5 h-5" />,
-      },
-    ];
+    shared.push({ text: "ADMIN", path: "/events", icon: <Layers className="w-4 h-4" /> });
   }
-
   return shared;
 }
 
@@ -55,160 +37,187 @@ export default function NavBar({ content }) {
   const { user, logoutUser } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
 
-  const isActive = (path) => location.pathname.startsWith(path);
+  const isActive = useCallback((path) => location.pathname === path, [location.pathname]);
 
-  const handleLogout = async () => {
+  const handleLogoutConfirm = async () => {
+    setLogoutModalOpen(false);
     await logoutUser();
     navigate("/login");
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F7F5FF]">
-      {/* ───────── FLOATING NAVBAR ───────── */}
-      <header className="fixed inset-x-0 top-4 z-50 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div
-            className="h-16 px-6 flex items-center justify-between
-            rounded-2xl bg-white/80 backdrop-blur-xl
-            shadow-lg border border-purple-100"
-          >
-            {/* LEFT */}
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setOpen(true)}
-                className="md:hidden p-2 rounded-lg hover:bg-gray-100"
-              >
-                <Menu className="w-6 h-6 text-gray-700" />
-              </button>
+    <div className="min-h-screen flex flex-col bg-[#050505] text-white font-sans selection:bg-[#F72585]/30 overflow-x-hidden">
+      
+      {/* ───────── NEXUS TOP HUD ───────── */}
+      <header className="fixed inset-x-0 top-0 z-[100] bg-black/60 backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 h-16 sm:h-20 flex items-center justify-between">
+          
+          <div className="flex items-center gap-4 lg:gap-12">
+            <Link to="/" className="flex flex-col group shrink-0">
+              <span className="text-lg sm:text-xl font-black tracking-tighter uppercase leading-none">
+                Unify<span className="text-[#F72585]">.</span>
+              </span>
+              <span className="text-[7px] sm:text-[8px] font-black tracking-[0.4em] text-white/20 uppercase">Nexus_Global</span>
+            </Link>
 
-              <Link to="/" className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-lg">U</span>
-                </div>
-                <span className="text-lg font-bold text-gray-900">
-                  Unify<span className="text-purple-600">Events</span>
-                </span>
-              </Link>
-            </div>
-
-            {/* CENTER NAV */}
-            <nav className="hidden md:flex items-center gap-6">
+            <nav className="hidden lg:flex items-center gap-1">
               {getNavItems(user).map((item) => (
                 <Link
                   key={item.text}
                   to={item.path}
-                  className={`relative text-sm font-medium transition-colors
-                    ${
-                      isActive(item.path)
-                        ? "text-purple-700"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
+                  className={`px-4 xl:px-6 py-2 rounded-full text-[10px] font-black tracking-[0.2em] transition-all relative
+                    ${isActive(item.path) ? "text-[#F72585]" : "text-white/40 hover:text-white"}`}
                 >
                   {item.text}
-
                   {isActive(item.path) && (
                     <motion.div
-                      layoutId="nav-indicator"
-                      className="absolute -bottom-2 left-1/2 -translate-x-1/2
-                      w-1.5 h-1.5 bg-purple-600 rounded-full"
+                      layoutId="nav-pill"
+                      className="absolute inset-0 bg-[#F72585]/5 border border-[#F72585]/20 rounded-full -z-10"
                     />
                   )}
                 </Link>
               ))}
             </nav>
+          </div>
 
-            {/* RIGHT */}
-            <div className="hidden md:flex items-center gap-3">
-              <Link to="/profile" className="p-2 rounded-lg hover:bg-gray-100">
-                <User className="w-5 h-5 text-gray-700" />
+          <div className="flex items-center gap-2 sm:gap-6">
+            <div className="hidden xl:flex items-center gap-3 bg-white/5 border border-white/5 rounded-xl px-4 py-2 w-64 focus-within:border-[#F72585]/40 transition-all">
+              <Search className="w-3.5 h-3.5 text-white/20" />
+              <input 
+                type="text" 
+                placeholder="SEARCH_DB..." 
+                className="bg-transparent border-none outline-none text-[10px] font-bold text-white placeholder:text-white/10 w-full tracking-widest"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Link to="/cart" className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/5 hover:bg-[#F72585]/10 hover:border-[#F72585]/40 transition-all group">
+                <ShoppingCart className="w-4 h-4 text-white/40 group-hover:text-[#F72585]" />
               </Link>
 
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 rounded-xl
-                bg-gradient-to-r from-purple-600 to-pink-500
-                text-white text-sm font-semibold shadow-md
-                hover:opacity-90 transition"
+              <div className="h-6 w-px bg-white/10 mx-1 hidden sm:block" />
+
+              <Link 
+                to="/profile" 
+                className="flex items-center gap-2 sm:gap-3 px-2 py-1 sm:py-1.5 rounded-xl bg-white/5 border border-white/5 hover:border-white/20 transition-all"
               >
-                Logout
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-gradient-to-br from-[#7209B7] to-[#F72585] flex items-center justify-center shadow-lg shadow-[#F72585]/20">
+                  <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <div className="hidden sm:block text-left leading-none">
+                    <p className="text-[10px] font-bold uppercase tracking-tighter truncate max-w-[80px]">{user?.username || "Guest"}</p>
+                </div>
+              </Link>
+
+              <button 
+                onClick={() => setLogoutModalOpen(true)}
+                className="hidden md:flex items-center gap-2 h-9 sm:h-10 px-4 rounded-xl bg-white/5 border border-white/5 hover:bg-red-500/10 hover:border-red-500/40 transition-all group"
+              >
+                <Power className="w-4 h-4 text-white/40 group-hover:text-red-500" />
+                <span className="text-[9px] font-[1000] uppercase tracking-widest text-white/40 group-hover:text-red-500">Exit</span>
+              </button>
+
+              <button
+                onClick={() => setOpen(true)}
+                className="lg:hidden w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/5"
+              >
+                <Menu className="w-5 h-5 text-white" />
               </button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* ───────── MOBILE DRAWER (UNCHANGED LOGIC) ───────── */}
+      {/* MODAL INTEGRATION */}
+      <LogoutConfirmModal 
+        open={logoutModalOpen} 
+        onClose={() => setLogoutModalOpen(false)} 
+        onConfirm={handleLogoutConfirm} 
+      />
+
       <AnimatePresence>
         {open && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setOpen(false)}
-              className="fixed inset-0 bg-black/40 z-40"
+              className="fixed inset-0 bg-black/90 backdrop-blur-md z-[110]"
             />
 
             <motion.aside
-              initial={{ x: "-100%" }}
+              initial={{ x: "100%" }}
               animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "spring", stiffness: 260, damping: 25 }}
-              className="fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-xl border-r"
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 right-0 z-[120] w-[280px] sm:w-80 bg-[#0a0a0a] border-l border-white/5 p-6 sm:p-10 flex flex-col"
             >
-              <div className="p-4 border-b flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-500 rounded-xl flex items-center justify-center text-white font-bold">
-                  U
+              <div className="flex justify-between items-center mb-12 sm:mb-16">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="text-[#F72585]" size={14} />
+                  <span className="text-[9px] font-black tracking-[0.4em] uppercase">Navigation</span>
                 </div>
-                <span className="text-gray-900 text-lg font-semibold">
-                  UnifyEvents
-                </span>
+                <button onClick={() => setOpen(false)} className="w-9 h-9 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition-colors">
+                   <X size={16} />
+                </button>
               </div>
 
-              <ul className="p-3 space-y-1">
+              <div className="flex flex-col gap-2">
                 {getNavItems(user).map((item) => (
-                  <li key={item.text}>
-                    <Link
-                      to={item.path}
-                      onClick={() => setOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-                        isActive(item.path)
-                          ? "bg-purple-100 text-purple-700 font-medium"
-                          : "text-gray-800 hover:bg-gray-100"
-                      }`}
-                    >
+                  <Link
+                    key={item.text}
+                    to={item.path}
+                    onClick={() => setOpen(false)}
+                    className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                      isActive(item.path) 
+                        ? "bg-[#F72585]/10 border-[#F72585]/40 text-white" 
+                        : "bg-white/5 border-transparent text-white/40 hover:text-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-4 text-[10px] sm:text-[11px] font-black tracking-[0.2em] sm:tracking-[0.3em] uppercase">
                       {item.icon}
                       {item.text}
-                    </Link>
-                  </li>
+                    </div>
+                    {isActive(item.path) && <Activity size={14} className="text-[#F72585] animate-pulse" />}
+                  </Link>
                 ))}
+              </div>
 
+              <div className="mt-auto pt-10 border-t border-white/5">
                 <button
-                  onClick={handleLogout}
-                  className="flex w-full items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-50 text-red-600"
+                  onClick={() => {
+                    setOpen(false);
+                    setLogoutModalOpen(true);
+                  }}
+                  className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-white text-black text-[10px] sm:text-[11px] font-black tracking-[0.3em] sm:tracking-[0.4em] uppercase hover:bg-red-500 hover:text-white transition-all shadow-xl"
                 >
-                  <LogOut className="w-5 h-5" />
-                  Logout
+                  <LogOut size={16} />
+                  Disconnect
                 </button>
-              </ul>
+              </div>
             </motion.aside>
           </>
         )}
       </AnimatePresence>
 
-      {/* ───────── MOBILE BOTTOM NAV (UNCHANGED) ───────── */}
-      <nav className="md:hidden fixed bottom-4 inset-x-0 z-50 flex justify-center">
-        <div className="bg-white shadow-2xl border border-gray-200 rounded-3xl px-6 py-3 flex items-center gap-8">
-          {[HomeIcon, BookOpen, Ticket, ShoppingCart, User].map((Icon, i) => (
-            <Icon key={i} className="w-6 h-6 text-gray-500" />
-          ))}
+      <main className="flex-1 pt-16 sm:pt-20 relative">
+        <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+          <div className="absolute top-[-5%] right-[-5%] w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] bg-[#7209B7]/5 blur-[80px] sm:blur-[150px] rounded-full" />
+          <div className="absolute bottom-[5%] left-[-5%] w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] bg-[#F72585]/5 blur-[80px] sm:blur-[150px] rounded-full" />
         </div>
-      </nav>
+        
+        {content}
+      </main>
 
-      {/* ───────── MAIN CONTENT ───────── */}
-      <main className="flex-1 pt-24 pb-24 md:pb-0">{content}</main>
+      <style>{`
+        ::-webkit-scrollbar { display: none; }
+        input::placeholder { color: rgba(255,255,255,0.1); }
+      `}</style>
     </div>
   );
 }
+

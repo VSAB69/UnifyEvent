@@ -1,153 +1,165 @@
 import React from "react";
-import { Button } from "@mui/material";
+import { Button } from "@chakra-ui/react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import { CheckCircle2, Home as HomeIcon } from "lucide-react";
 
 export default function BookingSuccessPage() {
   const nav = useNavigate();
   const { id } = useParams();
 
   return (
-    <div className="relative w-full min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50 pb-20 pt-28">
-      {/* BACKGROUND ANIMATIONS */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 0.35, scale: 1 }}
-        transition={{ duration: 2 }}
-        className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-purple-300 rounded-full blur-[160px]"
-      />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 0.3, scale: 1 }}
-        transition={{ duration: 2.2 }}
-        className="absolute -bottom-40 -right-40 w-[550px] h-[550px] bg-pink-300 rounded-full blur-[190px]"
-      />
+    <div className="relative w-full min-h-screen flex items-center justify-center overflow-hidden bg-[#050505] text-white selection:bg-[#F72585]">
 
-      {/* FLOATING PARTICLES */}
-      {[...Array(18)].map((_, i) => (
-        <motion.div
-          key={i}
-          initial={{
-            opacity: Math.random() * 0.3 + 0.1,
-            x: Math.random() * window.innerWidth - 200,
-            y: Math.random() * window.innerHeight - 200,
-            scale: Math.random() * 0.6 + 0.4,
-          }}
-          animate={{
-            y: ["0%", "-8%", "0%"],
-            opacity: [0.15, 0.35, 0.15],
-          }}
-          transition={{
-            duration: 10 + Math.random() * 8,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="absolute w-2 h-2 bg-purple-300 rounded-full blur-[1px]"
-        />
-      ))}
-
-      {/* MAIN CARD */}
+      {/* 🔥 BACKGROUND GLOW */}
       <motion.div
-        initial={{ opacity: 0, y: 50, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="relative bg-white/70 backdrop-blur-xl border border-white/50 shadow-2xl p-12 rounded-3xl w-[90%] max-w-xl flex flex-col items-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.2 }}
+        className="absolute inset-0"
       >
-        {/* Success Icon */}
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{
-            duration: 0.6,
-            type: "spring",
-            stiffness: 200,
-            damping: 12,
-          }}
-          className="mb-4"
-        >
-          <CheckCircleRoundedIcon
-            sx={{ fontSize: 100 }}
-            className="text-green-500 drop-shadow-xl"
+        <div className="absolute top-[-200px] left-[-200px] w-[600px] h-[600px] bg-[#7C3AED] rounded-full blur-[200px] opacity-20" />
+        <div className="absolute bottom-[-200px] right-[-200px] w-[600px] h-[600px] bg-[#F72585] rounded-full blur-[220px] opacity-20" />
+      </motion.div>
+
+      {/* 🔥 GRID OVERLAY */}
+      <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:60px_60px]" />
+
+      {/* 🔥 MAIN CARD */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.85, y: 60 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+        className="relative z-10 bg-white/5 backdrop-blur-2xl border border-white/10 shadow-[0_40px_120px_rgba(0,0,0,0.8)] px-8 md:px-14 py-16 rounded-3xl md:rounded-[40px] flex flex-col items-center text-center max-w-xl w-[90%]"
+      >
+
+        {/* 🔥 ICON BURST */}
+        <div className="relative mb-8">
+
+          {/* Pulse Ring */}
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 2.2, opacity: 0 }}
+            transition={{ duration: 1.2, ease: "easeOut", repeat: Infinity }}
+            className="absolute inset-0 bg-green-500/20 rounded-full"
           />
-        </motion.div>
 
-        {/* Heading */}
-        <motion.h1
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-4xl font-extrabold text-gray-800 mb-3"
-        >
-          Booking Confirmed!
-        </motion.h1>
+          {/* Glow Ring */}
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1.6, opacity: 0.3 }}
+            transition={{ duration: 0.8 }}
+            className="absolute inset-0 bg-green-500 blur-xl rounded-full"
+          />
 
-        {/* Subtitle */}
-        <motion.p
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.3 }}
-          className="text-lg text-gray-600 mb-6"
-        >
-          Your Booking ID:{" "}
-          <span className="font-semibold text-purple-700">{id}</span>
-        </motion.p>
-
-        {/* Dividing Line */}
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: "80%" }}
-          transition={{ duration: 0.6, delay: 0.35 }}
-          className="h-[2px] bg-gradient-to-r from-purple-400 to-pink-400 rounded-full mb-8"
-        />
-
-        {/* CTA Button */}
-        <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
-          <Button
-            variant="contained"
-            onClick={() => nav("/home")}
-            sx={{
-              background: "linear-gradient(90deg, #a855f7 0%, #ec4899 100%)",
-              boxShadow: "0 10px 25px rgba(168,85,247,0.35)",
-              paddingX: 4,
-              paddingY: 1.4,
-              fontSize: "1.1rem",
-              borderRadius: "12px",
-              textTransform: "none",
-              fontWeight: 600,
-              ":hover": {
-                background: "linear-gradient(90deg, #9333ea 0%, #db2777 100%)",
-                boxShadow: "0 10px 28px rgba(168,85,247,0.55)",
-              },
+          {/* Icon */}
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{
+              type: "spring",
+              stiffness: 220,
+              damping: 12,
             }}
           >
-            Return Home
+            <CheckCircle2
+              size={100}
+              className="text-green-400 drop-shadow-[0_0_20px_rgba(34,197,94,0.7)]"
+            />
+          </motion.div>
+        </div>
+
+        {/* 🔥 TITLE */}
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="text-3xl md:text-5xl font-[1000] uppercase tracking-tighter mb-4"
+        >
+          Booking Confirmed
+        </motion.h1>
+
+        {/* 🔥 SUBTEXT */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="text-base md:text-lg text-white/60 mb-6 font-bold tracking-wide"
+        >
+          Your secure access key:
+        </motion.p>
+
+        {/* 🔥 BOOKING ID BADGE */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.45 }}
+          className="px-8 py-4 rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#F72585] text-white font-black tracking-[0.3em] mb-8 shadow-[0_10px_40px_rgba(124,58,237,0.3)] text-xl md:text-2xl italic"
+        >
+          #{id || "SYNC_RESERVED"}
+        </motion.div>
+
+        {/* 🔥 DIVIDER */}
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: "70%" }}
+          transition={{ delay: 0.5 }}
+          className="h-[2px] bg-gradient-to-r from-[#7C3AED] to-[#F72585] rounded-full mb-10 opacity-30"
+        />
+
+        {/* 🔥 BUTTON */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+        >
+          <Button
+            onClick={() => nav("/home")}
+            size="lg"
+            bgGradient="linear(to-r, #7C3AED, #F72585)"
+            color="white"
+            px={10}
+            h="60px"
+            fontSize="sm"
+            fontWeight="1000"
+            borderRadius="18px"
+            textTransform="uppercase"
+            letterSpacing="0.2em"
+            boxShadow="0 15px 35px rgba(124,58,237,0.4)"
+            border="none"
+            _hover={{
+              bgGradient: "linear(to-r, #6D28D9, #DB2777)",
+              transform: "translateY(-4px)",
+              boxShadow: "0 20px 50px rgba(124,58,237,0.6)",
+            }}
+            _active={{ transform: "scale(0.95)" }}
+            transition="all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+            leftIcon={<HomeIcon size={18} />}
+          >
+            Return to Home
           </Button>
         </motion.div>
       </motion.div>
 
-      {/* CONFETTI ANIMATION (subtle) */}
-      {[...Array(14)].map((_, i) => (
+      {/* 🔥 FLOATING PARTICLES (SMOOTH) */}
+      {[...Array(12)].map((_, i) => (
         <motion.div
           key={i}
           initial={{
-            x: Math.random() * window.innerWidth - 200,
-            y: -50,
-            rotate: Math.random() * 360,
+            opacity: 0,
+            y: 50,
+            x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
           }}
           animate={{
-            y: window.innerHeight + 100,
-            rotate: Math.random() * 720,
+            opacity: [0, 0.3, 0],
+            y: [0, -400],
           }}
           transition={{
-            duration: 4 + Math.random() * 3,
+            duration: 4 + Math.random() * 4,
             repeat: Infinity,
             delay: Math.random() * 2,
-            ease: "easeOut",
           }}
-          className={`absolute w-3 h-3 rounded ${
-            i % 2 === 0 ? "bg-purple-400" : "bg-pink-400"
-          }`}
+          className="absolute w-1 h-1 bg-white/30 rounded-full"
         />
       ))}
     </div>

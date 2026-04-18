@@ -1,15 +1,9 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Search, Plus, Users } from "lucide-react";
+import { X, Search, Plus, Users, ShieldCheck, UserMinus } from "lucide-react";
 import EventService from "../EventService";
 
-export default function OrganiserModal({
-  open,
-  onClose,
-  eventId,
-  currentOrganiserIds = [],
-  refreshEvents,
-}) {
+export default function OrganiserModal({ open, onClose, eventId, currentOrganiserIds = [], refreshEvents }) {
   const [allOrganisers, setAllOrganisers] = useState([]);
   const [assigned, setAssigned] = useState([]);
   const [search, setSearch] = useState("");
@@ -22,202 +16,93 @@ export default function OrganiserModal({
       setAllOrganisers(res.data || []);
       setAssigned(currentOrganiserIds || []);
     } catch (err) {
-      console.error("Failed to load organisers", err);
-      setError("Failed to load organisers");
+      setError("FAILED_TO_LOAD_STAFF_REGISTRY");
     }
   }, [currentOrganiserIds]);
 
-  useEffect(() => {
-    if (!open) return;
-    loadOrganisers();
-  }, [open, loadOrganisers]);
+  useEffect(() => { if (open) loadOrganisers(); }, [open, loadOrganisers]);
 
   if (!open) return null;
 
-  const assignedOrganisers = allOrganisers.filter((o) =>
-    assigned.includes(o.id)
-  );
-
+  const assignedOrganisers = allOrganisers.filter((o) => assigned.includes(o.id));
   const availableOrganisers = allOrganisers.filter(
-    (o) =>
-      !assigned.includes(o.id) &&
-      o.user_display.toLowerCase().includes(search.toLowerCase())
+    (o) => !assigned.includes(o.id) && o.user_display.toLowerCase().includes(search.toLowerCase())
   );
 
   const toggleAssigned = (id) => {
-    setAssigned((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    setAssigned((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   };
 
   const handleSave = async () => {
-    if (!eventId) {
-      setError("Invalid event ID");
-      return;
-    }
-
     try {
       setSaving(true);
       setError(null);
-
-      // 🔥 JSON ONLY (fixes 415)
-      await EventService.updateEventJson(eventId, {
-        organisers: assigned,
-      });
-
-      if (typeof refreshEvents === "function") {
-        await refreshEvents();
-      }
-
+      await EventService.updateEventJson(eventId, { organisers: assigned });
+      if (refreshEvents) await refreshEvents();
       onClose();
     } catch (err) {
-      console.error("Failed to save organisers", err);
-      setError("Failed to save organisers. Please try again.");
-    } finally {
-      setSaving(false);
-    }
+      setError("SYNC_FAILURE: ACCESS_DENIED");
+    } finally { setSaving(false); }
   };
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center px-4"
-      >
-        <motion.div
-          initial={{ scale: 0.96, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.96, opacity: 0 }}
-          transition={{ duration: 0.25 }}
-          className="relative w-full max-w-5xl bg-white rounded-3xl shadow-2xl p-8"
-        >
-          {/* CLOSE */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition"
-          >
-            <X className="w-5 h-5 text-gray-600" />
-          </button>
-
-          {/* HEADER */}
-          <div className="mb-6">
-            <p className="text-xs font-semibold tracking-widest uppercase text-purple-600">
-              Admin
-            </p>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Manage Organisers
-            </h2>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center px-4">
+        <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="relative w-full max-w-5xl bg-[#0a0a0a] border-2 border-white/10 rounded-[45px] shadow-2xl p-10 overflow-hidden">
+          <button onClick={onClose} className="absolute top-8 right-8 p-2 rounded-xl hover:bg-white/10 text-white/40"><X size={24} /></button>
+          
+          <div className="flex items-center gap-3 mb-8">
+            <Users className="text-[#9155FD]" size={24} />
+            <h2 className="text-3xl font-[1000] uppercase tracking-tighter text-white">Staff_Allocation</h2>
           </div>
 
-          {/* MAIN GRID */}
-          <div className="grid grid-cols-2 gap-8">
-            {/* ASSIGNED */}
-            <div className="border rounded-2xl p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <Users className="w-4 h-4 text-purple-600" />
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Assigned Organisers
-                </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* ASSIGNED PANE */}
+            <div className="bg-white/[0.02] border-2 border-white/5 rounded-[32px] p-6 flex flex-col h-[400px]">
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
+                  <ShieldCheck size={14} className="text-[#00FF41]" /> Bound_Organisers
+                </span>
+                <span className="text-xs font-black text-[#00FF41]">{assignedOrganisers.length}</span>
               </div>
-
-              {assignedOrganisers.length === 0 ? (
-                <p className="text-sm text-gray-500">
-                  No organisers assigned yet.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {assignedOrganisers.map((o) => (
-                    <div
-                      key={o.id}
-                      className="flex items-center justify-between rounded-xl border px-4 py-2 hover:bg-gray-50 transition"
-                    >
-                      <span className="text-sm font-medium">
-                        {o.user_display}
-                      </span>
-
-                      <button
-                        onClick={() => toggleAssigned(o.id)}
-                        className="text-xs font-semibold text-red-600 hover:underline"
-                      >
-                        Remove
-                      </button>
+              <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                {assignedOrganisers.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-[10px] font-black text-white/10 uppercase tracking-widest">No_Units_Bound</div>
+                ) : (
+                  assignedOrganisers.map((o) => (
+                    <div key={o.id} className="flex items-center justify-between bg-black border border-white/10 rounded-2xl px-5 py-3 group">
+                      <span className="text-xs font-black text-white/80">{o.user_display}</span>
+                      <button onClick={() => toggleAssigned(o.id)} className="p-2 text-red-500/40 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"><UserMinus size={16} /></button>
                     </div>
-                  ))}
-                </div>
-              )}
+                  ))
+                )}
+              </div>
             </div>
 
-            {/* AVAILABLE */}
-            <div className="border rounded-2xl p-5">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                Available Organisers
-              </h3>
-
-              <div className="flex items-center gap-2 border rounded-xl px-3 py-2 mb-4">
-                <Search className="w-4 h-4 text-gray-400" />
-                <input
-                  placeholder="Search organisers..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full outline-none text-sm"
-                />
+            {/* SEARCH PANE */}
+            <div className="bg-white/[0.02] border-2 border-white/5 rounded-[32px] p-6 flex flex-col h-[400px]">
+              <div className="relative mb-6">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={16} />
+                <input placeholder="SEARCH_STAFF_ID..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full bg-black border-2 border-white/5 rounded-2xl pl-12 pr-4 py-3 text-[10px] font-black uppercase tracking-widest focus:border-[#9155FD] outline-none" />
               </div>
-
-              {availableOrganisers.length === 0 ? (
-                <p className="text-sm text-gray-500">No matching organisers.</p>
-              ) : (
-                <div className="space-y-2">
-                  {availableOrganisers.map((o) => (
-                    <div
-                      key={o.id}
-                      className="flex items-center justify-between rounded-xl border px-4 py-2 hover:bg-gray-50 transition"
-                    >
-                      <span className="text-sm font-medium">
-                        {o.user_display}
-                      </span>
-
-                      <button
-                        onClick={() => toggleAssigned(o.id)}
-                        className="flex items-center gap-1 text-xs font-semibold text-purple-700 hover:underline"
-                      >
-                        <Plus className="w-3 h-3" />
-                        Add
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                {availableOrganisers.map((o) => (
+                  <div key={o.id} className="flex items-center justify-between bg-black/40 border border-white/5 rounded-2xl px-5 py-3">
+                    <span className="text-xs font-black text-white/40">{o.user_display}</span>
+                    <button onClick={() => toggleAssigned(o.id)} className="p-2 text-[#9155FD]/40 hover:text-[#9155FD] hover:bg-[#9155FD]/10 rounded-xl transition-all"><Plus size={16} /></button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
-          {error && (
-            <p className="mt-4 text-sm text-red-600 font-medium">{error}</p>
-          )}
+          {error && <p className="mt-6 text-[10px] font-black text-[#F72585] uppercase tracking-widest text-center">{error}</p>}
 
-          {/* ACTIONS */}
-          <div className="flex gap-3 mt-8">
-            <button
-              onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition"
-            >
-              Cancel
+          <div className="flex gap-4 mt-10">
+            <button onClick={onClose} className="flex-1 py-5 rounded-2xl bg-white/[0.05] text-white/40 font-black uppercase tracking-widest text-xs hover:bg-white/10">Cancel</button>
+            <button onClick={handleSave} disabled={saving} className="flex-[2] py-5 rounded-2xl bg-white text-black font-[1000] uppercase tracking-widest text-xs hover:bg-[#9155FD] hover:text-white transition-all shadow-xl active:scale-95">
+              {saving ? "SYNCING..." : "Confirm_Allocation"}
             </button>
-
-            <motion.button
-              onClick={handleSave}
-              disabled={saving}
-              whileHover={!saving ? { scale: 1.03 } : undefined}
-              whileTap={!saving ? { scale: 0.97 } : undefined}
-              className={`flex-1 py-2.5 rounded-xl font-semibold transition shadow-md ${
-                saving
-                  ? "bg-purple-400 cursor-not-allowed"
-                  : "bg-purple-600 hover:bg-purple-700 text-white"
-              }`}
-            >
-              {saving ? "Saving..." : "Save Changes"}
-            </motion.button>
           </div>
         </motion.div>
       </motion.div>

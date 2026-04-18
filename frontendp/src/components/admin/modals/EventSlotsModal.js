@@ -8,6 +8,8 @@ import {
   Calendar,
   Clock,
   AlertCircle,
+  Activity,
+  Terminal,
 } from "lucide-react";
 import EventService from "../EventService";
 import EventSlotModal from "./EventSlotModal";
@@ -25,50 +27,32 @@ function SlotErrorModal({ open, onClose }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center px-4"
+        className="fixed inset-0 z-[110] bg-black/90 backdrop-blur-xl flex items-center justify-center px-4"
       >
         <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
+          initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6"
+          exit={{ scale: 0.9, opacity: 0 }}
+          className="relative w-full max-w-md bg-[#0a0a0a] border-2 border-[#F72585] rounded-[40px] shadow-[0_0_60px_rgba(247,37,133,0.2)] p-10 text-center"
         >
-          {/* CLOSE */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition"
-          >
-            <X className="w-5 h-5 text-gray-600" />
-          </button>
-
-          {/* ICON */}
-          <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 flex items-center justify-center rounded-full bg-red-100 text-red-600">
-              <AlertCircle className="w-6 h-6" />
-            </div>
+          <div className="w-20 h-20 flex items-center justify-center rounded-full bg-[#F72585]/10 text-[#F72585] mb-6 mx-auto animate-pulse">
+            <AlertCircle size={40} />
           </div>
 
-          {/* CONTENT */}
-          <h3 className="text-xl font-semibold text-center text-gray-900">
-            Unable to Delete Slot
+          <h3 className="text-2xl font-[1000] uppercase tracking-tighter text-white mb-4">
+            Integrity_Violation
           </h3>
 
-          <p className="mt-2 text-sm text-center text-gray-600">
-            Cannot delete slot as bookings are linked to this slot.
+          <p className="text-xs font-bold text-white/40 uppercase tracking-widest leading-relaxed mb-8">
+            Cannot purge temporal sector as active bookings are linked to this registry node.
           </p>
 
-          {/* ACTION */}
-          <div className="mt-6">
-            <motion.button
-              onClick={onClose}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              className="w-full py-2.5 rounded-xl bg-purple-600 text-white font-semibold hover:bg-purple-700 transition shadow-md"
-            >
-              OK
-            </motion.button>
-          </div>
+          <button
+            onClick={onClose}
+            className="w-full py-5 rounded-2xl bg-white text-black font-black uppercase tracking-widest text-xs hover:bg-[#F72585] hover:text-white transition-all"
+          >
+            Acknowledge
+          </button>
         </motion.div>
       </motion.div>
     </AnimatePresence>
@@ -135,31 +119,37 @@ export default function EventSlotsListModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center px-4"
+          className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center px-4"
         >
           <motion.div
-            initial={{ scale: 0.96, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.96, opacity: 0 }}
+            initial={{ scale: 0.96, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.96, opacity: 0, y: 20 }}
             transition={{ duration: 0.25 }}
-            className="relative w-full max-w-5xl bg-white rounded-3xl shadow-2xl p-8"
+            className="relative w-full max-w-6xl bg-[#0a0a0a] border-2 border-white/10 rounded-[45px] shadow-2xl p-10 overflow-hidden"
           >
             {/* CLOSE */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition"
+              className="absolute top-8 right-8 p-2 rounded-xl hover:bg-white/10 text-white/40 transition"
             >
-              <X className="w-5 h-5 text-gray-600" />
+              <X className="w-6 h-6" />
             </button>
 
             {/* HEADER */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
               <div>
-                <p className="text-xs font-semibold tracking-widest uppercase text-purple-600">
-                  Admin
-                </p>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Manage Slots — {eventName || `Event #${eventId}`}
+                <div className="flex items-center gap-3 mb-3">
+                  <Terminal className="text-[#F72585]" size={20} />
+                  <p className="text-[10px] tracking-[0.6em] text-white/40 uppercase font-black">
+                    Registry_Temporal_v4.1
+                  </p>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-[1000] uppercase tracking-tighter text-white">
+                  Temporal_Sectors —{" "}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F72585] via-[#9155FD] to-[#4CC9F0] italic">
+                    {eventName?.toUpperCase() || `NODE_#${eventId}`}
+                  </span>
                 </h2>
               </div>
 
@@ -170,71 +160,88 @@ export default function EventSlotsListModal({
                 }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.96 }}
-                className="flex items-center gap-2 rounded-xl bg-purple-600 text-white px-4 py-2 font-semibold hover:bg-purple-700 transition shadow-md"
+                className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-white text-black font-[1000] uppercase tracking-widest text-xs shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:bg-[#00FF41] hover:text-white transition-all"
               >
-                <Plus className="w-4 h-4" />
-                Add Slot
+                <Plus size={18} strokeWidth={3} />
+                Add_Sector
               </motion.button>
             </div>
 
             {/* TABLE HEADER */}
-            <div className="grid grid-cols-6 gap-4 text-xs font-semibold uppercase tracking-wider text-gray-500 border-b pb-3">
-              <div>Date</div>
-              <div>Start</div>
-              <div>End</div>
-              <div>Type</div>
-              <div className="text-right">Available</div>
-              <div className="text-center">Actions</div>
+            <div className="grid grid-cols-6 gap-4 px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl mb-4 text-[10px] font-black uppercase tracking-[0.3em] text-white/30">
+              <div>Date_Stamp</div>
+              <div>Start_UTC</div>
+              <div>End_UTC</div>
+              <div>Access_Type</div>
+              <div className="text-right">Availability</div>
+              <div className="text-center">Operations</div>
             </div>
 
             {/* TABLE BODY */}
-            <div className="mt-3 space-y-2">
+            <div className="max-h-[50vh] overflow-y-auto custom-scrollbar space-y-3 pr-2">
               {loading ? (
-                <p className="text-sm text-gray-500">Loading slots…</p>
+                <div className="flex flex-col items-center py-20">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                    className="w-10 h-10 border-4 border-[#9155FD] border-t-transparent rounded-full mb-4"
+                  />
+                  <p className="text-[10px] tracking-widest text-[#9155FD] font-black animate-pulse">
+                    SYNCHRONIZING_TIMELINE...
+                  </p>
+                </div>
               ) : slots.length === 0 ? (
-                <p className="text-sm text-gray-500">No slots added yet.</p>
+                <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[32px]">
+                  <p className="text-xs font-black text-white/10 uppercase tracking-[0.4em]">
+                    No_Temporal_Records_Found
+                  </p>
+                </div>
               ) : (
                 slots.map((s) => (
                   <motion.div
                     key={s.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="grid grid-cols-6 gap-4 items-center rounded-xl border px-4 py-3 hover:bg-gray-50 transition"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="grid grid-cols-6 gap-4 items-center bg-white/[0.01] border border-white/5 rounded-2xl px-6 py-4 hover:border-white/20 transition-all group"
                   >
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-4 h-4 text-gray-400" />
+                    <div className="flex items-center gap-3 text-xs font-black text-white/80">
+                      <Calendar className="w-4 h-4 text-[#9155FD]" />
                       {s.date}
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="w-4 h-4 text-gray-400" />
+                    <div className="flex items-center gap-3 text-xs font-black text-white/80">
+                      <Clock className="w-4 h-4 text-[#4CC9F0]" />
                       {s.start_time}
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="w-4 h-4 text-gray-400" />
+                    <div className="flex items-center gap-3 text-xs font-black text-white/80">
+                      <Clock className="w-4 h-4 text-[#F72585]" />
                       {s.end_time}
                     </div>
 
-                    <div className="text-sm">
-                      {s.unlimited_participants
-                        ? "Unlimited"
-                        : `Max ${s.max_participants}`}
+                    <div className="text-[10px] font-black uppercase tracking-widest text-white/40">
+                      {s.unlimited_participants ? (
+                        <span className="text-[#00FF41]">Unlimited_Link</span>
+                      ) : (
+                        `Max_${s.max_participants}_Units`
+                      )}
                     </div>
 
-                    <div className="text-sm text-right">
-                      {s.unlimited_participants
-                        ? "—"
-                        : s.available_participants}
+                    <div className="text-xs font-black text-right text-white italic">
+                      {s.unlimited_participants ? (
+                        <span className="opacity-20">—</span>
+                      ) : (
+                        s.available_participants
+                      )}
                     </div>
 
-                    <div className="flex justify-center gap-2">
+                    <div className="flex justify-center gap-3">
                       <button
                         onClick={() => {
                           setSlotIdToEdit(s.id);
                           setSlotModalOpen(true);
                         }}
-                        className="p-2 rounded-lg hover:bg-purple-100 text-purple-700 transition"
+                        className="p-3 rounded-xl bg-white/5 text-[#4CC9F0] hover:bg-[#4CC9F0] hover:text-white transition-all active:scale-90"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
@@ -244,7 +251,7 @@ export default function EventSlotsListModal({
                           setSlotToDelete(s);
                           setDeleteOpen(true);
                         }}
-                        className="p-2 rounded-lg hover:bg-red-100 text-red-600 transition"
+                        className="p-3 rounded-xl bg-white/5 text-[#F72585] hover:bg-[#F72585] hover:text-white transition-all active:scale-90"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -255,19 +262,18 @@ export default function EventSlotsListModal({
             </div>
 
             {/* FOOTER */}
-            <div className="mt-8 flex justify-end">
+            <div className="mt-10 flex justify-end gap-4 border-t border-white/5 pt-8">
               <button
                 onClick={onClose}
-                className="px-6 py-2 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition"
+                className="px-10 py-4 rounded-2xl bg-white/5 text-white/40 font-black uppercase tracking-widest text-xs hover:bg-white/10 transition-all"
               >
-                Close
+                Close_Terminal
               </button>
             </div>
           </motion.div>
         </motion.div>
       </AnimatePresence>
 
-      {/* CREATE / EDIT SLOT */}
       <EventSlotModal
         open={slotModalOpen}
         onClose={() => setSlotModalOpen(false)}
@@ -276,7 +282,6 @@ export default function EventSlotsListModal({
         refreshList={fetchSlots}
       />
 
-      {/* DELETE SLOT */}
       <DeleteSlotModal
         open={deleteOpen}
         slot={slotToDelete}
@@ -290,8 +295,14 @@ export default function EventSlotsListModal({
         onConfirm={handleDeleteConfirm}
       />
 
-      {/* ERROR ALERT */}
       <SlotErrorModal open={errorOpen} onClose={() => setErrorOpen(false)} />
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 20px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #F72585; }
+      `}</style>
     </>
   );
 }

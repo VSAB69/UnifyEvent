@@ -224,25 +224,42 @@ class TempBookSerializer(serializers.ModelSerializer):
             "phone_number": {"required": False, "allow_null": True, "allow_blank": True},
         }
 
+# events/serializers.py
 
 class TempBookTimeslotSerializer(serializers.ModelSerializer):
     event_id = serializers.IntegerField(source="slot.event_id", read_only=True)
     event_name = serializers.CharField(source="slot.event.name", read_only=True)
+    # NEW: SerializerMethodField to provide date and time details
+    slot_info = serializers.SerializerMethodField()
 
     class Meta:
         model = TempBookTimeslot
-        fields = ["id", "cart_item", "slot", "event_id", "event_name"]
+        # Added slot_info to the fields list
+        fields = ["id", "cart_item", "slot", "event_id", "event_name", "slot_info"]
+
+    def get_slot_info(self, obj):
+        """
+        Extracts formatted date and time from the linked EventSlot.
+        """
+        return {
+            "date": obj.slot.date,
+            "start_time": obj.slot.start_time.strftime("%H:%M"),
+            "end_time": obj.slot.end_time.strftime("%H:%M"),
+        }
 
     def validate(self, data):
         cart_item = data.get("cart_item", getattr(self.instance, "cart_item", None))
         slot = data.get("slot", getattr(self.instance, "slot", None))
+
         if cart_item and slot and slot.event_id != cart_item.event_id:
             raise serializers.ValidationError("Slot must belong to the same event as the cart item.")
-        # Capacity rule is enforced in model.clean(); keep here for early catch as well:
+
+        # Capacity rule for non-unlimited slots
         if cart_item and slot and not slot.unlimited_participants:
             needed = cart_item.participants_count
             if slot.available_participants is None or slot.available_participants < needed:
                 raise serializers.ValidationError("Selected slot does not have enough available capacity.")
+        
         return data
 
 

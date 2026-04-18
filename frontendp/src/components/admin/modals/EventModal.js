@@ -1,17 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Image as ImageIcon, IndianRupee } from "lucide-react";
+import { X, Image as ImageIcon, IndianRupee, Zap, Terminal, Activity } from "lucide-react";
 import EventService from "../EventService";
 
-export default function EventModal({
-  open,
-  onClose,
-  refreshEvents,
-  editEventData,
-}) {
+export default function EventModal({ open, onClose, refreshEvents, editEventData }) {
   const [categories, setCategories] = useState([]);
   const [parentEvents, setParentEvents] = useState([]);
-
   const [form, setForm] = useState({
     parent_committee: "",
     name: "",
@@ -20,21 +14,17 @@ export default function EventModal({
     price: "0",
     exclusivity: false,
   });
-
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
-  // Fetch data
   useEffect(() => {
     if (!open) return;
     EventService.getCategories().then((r) => setCategories(r.data || []));
     EventService.getParentEvents().then((r) => setParentEvents(r.data || []));
   }, [open]);
 
-  // Fill edit data
   useEffect(() => {
     if (!open) return;
-
     if (editEventData) {
       setForm({
         parent_committee: editEventData.parent_committee || "",
@@ -45,24 +35,13 @@ export default function EventModal({
         exclusivity: editEventData.exclusivity || false,
       });
       if (editEventData.image_key) {
-        // call secure endpoint to get signed URL
         EventService.getSecureImage(editEventData.image_key)
           .then((res) => setImagePreview(res.data.url))
           .catch(() => setImagePreview(null));
-      } else {
-        setImagePreview(null);
-      }
-
+      } else setImagePreview(null);
       setImageFile(null);
     } else {
-      setForm({
-        parent_committee: "",
-        name: "",
-        parent_event: "",
-        category: "",
-        price: "0",
-        exclusivity: false,
-      });
+      setForm({ parent_committee: "", name: "", parent_event: "", category: "", price: "0", exclusivity: false });
       setImagePreview(null);
       setImageFile(null);
     }
@@ -81,159 +60,67 @@ export default function EventModal({
     const fd = new FormData();
     Object.entries(form).forEach(([k, v]) => fd.append(k, v));
     if (imageFile) fd.append("image", imageFile);
-
-    if (editEventData) {
-      await EventService.updateEvent(editEventData.id, fd);
-    } else {
-      await EventService.createEvent(fd);
-    }
-
+    editEventData ? await EventService.updateEvent(editEventData.id, fd) : await EventService.createEvent(fd);
     refreshEvents();
     onClose();
   };
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center px-4"
-      >
-        <motion.div
-          initial={{ scale: 0.96, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.96, opacity: 0 }}
-          transition={{ duration: 0.25 }}
-          className="relative w-full max-w-5xl bg-white rounded-3xl shadow-2xl p-8"
-        >
-          {/* CLOSE */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition"
-          >
-            <X className="w-5 h-5 text-gray-600" />
-          </button>
-
-          {/* HEADER */}
-          <div className="mb-6">
-            <p className="text-xs font-semibold tracking-widest uppercase text-purple-600">
-              Admin
-            </p>
-            <h2 className="text-2xl font-bold text-gray-900">
-              {editEventData ? "Edit Event" : "Create Event"}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center px-4">
+        <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="relative w-full max-w-5xl bg-[#0a0a0a] border-2 border-white/10 rounded-[40px] shadow-2xl p-10 overflow-hidden">
+          <button onClick={onClose} className="absolute top-6 right-6 p-2 rounded-xl hover:bg-white/10 transition text-white/40"><X size={24} /></button>
+          
+          <div className="flex items-center gap-3 mb-8">
+            <Terminal className="text-[#F72585]" size={20} />
+            <h2 className="text-3xl font-[1000] uppercase tracking-tighter text-white">
+              {editEventData ? "Edit_Protocol" : "Initialize_Node"}
             </h2>
           </div>
 
-          {/* MAIN GRID */}
-          <div className="grid grid-cols-3 gap-6">
-            {/* LEFT — FORM */}
-            <div className="col-span-2 grid grid-cols-2 gap-4">
-              <Field
-                label="Parent Committee"
-                value={form.parent_committee}
-                onChange={(v) => setForm({ ...form, parent_committee: v })}
-              />
-              <Field
-                label="Event Name"
-                value={form.name}
-                onChange={(v) => setForm({ ...form, name: v })}
-              />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <Field label="COMMITTEE_ID" value={form.parent_committee} onChange={(v) => setForm({ ...form, parent_committee: v })} />
+                <Field label="NODE_NAME" value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
+                <Select label="PARENT_SECTOR" value={form.parent_event} onChange={(v) => setForm({ ...form, parent_event: v })} options={parentEvents} />
+                <Select label="CATEGORY_LOG" value={form.category} onChange={(v) => setForm({ ...form, category: v })} options={categories} />
+              </div>
 
-              <Select
-                label="Parent Event"
-                value={form.parent_event}
-                onChange={(v) => setForm({ ...form, parent_event: v })}
-                options={parentEvents}
-              />
-
-              <Select
-                label="Category"
-                value={form.category}
-                onChange={(v) => setForm({ ...form, category: v })}
-                options={categories}
-              />
-
-              <div className="col-span-2 flex items-center gap-6 mt-2">
+              <div className="flex items-end gap-10 bg-white/[0.03] p-6 rounded-3xl border border-white/5">
                 <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700">
-                    Price
-                  </label>
-                  <div className="mt-1 flex gap-2 rounded-xl border px-3 py-2">
-                    <IndianRupee className="w-4 h-4 text-gray-400" />
-                    <input
-                      type="number"
-                      value={form.price}
-                      onChange={(e) =>
-                        setForm({ ...form, price: e.target.value })
-                      }
-                      className="w-full outline-none text-sm"
-                    />
+                  <label className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-2 block">ACCESS_COST (INR)</label>
+                  <div className="flex items-center gap-3 bg-black border-2 border-white/10 rounded-2xl px-4 py-2 focus-within:border-[#4CC9F0] transition-all">
+                    <IndianRupee size={16} className="text-[#00FF41]" />
+                    <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="bg-transparent w-full outline-none font-black text-xl text-white" />
                   </div>
                 </div>
-
-                <label className="flex items-center gap-3 mt-6">
-                  <input
-                    type="checkbox"
-                    checked={form.exclusivity}
-                    onChange={(e) =>
-                      setForm({ ...form, exclusivity: e.target.checked })
-                    }
-                    className="w-5 h-5"
-                  />
-                  <span className="text-sm font-medium text-gray-800">
-                    Exclusive Event
-                  </span>
+                <label className="flex items-center gap-4 cursor-pointer group">
+                  <input type="checkbox" checked={form.exclusivity} onChange={(e) => setForm({ ...form, exclusivity: e.target.checked })} className="w-6 h-6 rounded-lg accent-[#F72585]" />
+                  <span className="text-[11px] font-[1000] text-white/60 uppercase tracking-widest group-hover:text-white transition-colors">Exclusive_Protocol</span>
                 </label>
               </div>
             </div>
 
-            {/* RIGHT — IMAGE */}
-            <div className="col-span-1">
-              <p className="text-sm font-semibold text-gray-800 mb-2">
-                Event Image
-              </p>
-
-              <label className="flex items-center justify-center gap-2 h-40 rounded-2xl border-2 border-dashed cursor-pointer hover:bg-gray-50 transition">
-                <ImageIcon className="w-5 h-5 text-gray-400" />
-                <span className="text-sm font-medium">Upload Image</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  onChange={handleImageChange}
-                />
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-white/40 uppercase tracking-widest block">NODE_VISUAL_ASSET</label>
+              <label className="flex flex-col items-center justify-center gap-3 aspect-square rounded-[35px] border-2 border-dashed border-white/10 cursor-pointer hover:bg-white/[0.02] transition-all group overflow-hidden">
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <>
+                    <ImageIcon size={32} className="text-white/20 group-hover:text-[#F72585] transition-colors" />
+                    <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Upload_Asset</span>
+                  </>
+                )}
+                <input type="file" accept="image/*" hidden onChange={handleImageChange} />
               </label>
-
-              {imagePreview && (
-                <div className="mt-4 rounded-xl overflow-hidden border">
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="w-full h-40 object-cover"
-                  />
-                </div>
-              )}
             </div>
           </div>
 
-          {/* ACTIONS */}
-          <div className="flex gap-3 mt-8">
-            <button
-              onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition"
-            >
-              Cancel
-            </button>
-
-            <motion.button
-              onClick={handleSubmit}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              className="flex-1 py-2.5 rounded-xl bg-purple-600 text-white font-semibold hover:bg-purple-700 transition shadow-md"
-            >
-              {editEventData ? "Save Changes" : "Create Event"}
-            </motion.button>
+          <div className="flex gap-4 mt-12">
+            <button onClick={onClose} className="flex-1 py-5 rounded-2xl bg-white/[0.05] text-white/40 font-black uppercase tracking-widest text-xs hover:bg-white/10 transition-all">Abort_Process</button>
+            <button onClick={handleSubmit} className="flex-[2] py-5 rounded-2xl bg-white text-black font-[1000] uppercase tracking-widest text-xs hover:bg-[#F72585] hover:text-white transition-all shadow-xl">Deploy_Changes</button>
           </div>
         </motion.div>
       </motion.div>
@@ -241,36 +128,22 @@ export default function EventModal({
   );
 }
 
-/* ---------- HELPERS ---------- */
-
 function Field({ label, value, onChange }) {
   return (
-    <div>
-      <label className="text-sm font-medium text-gray-700">{label}</label>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-xl border px-3 py-2 text-sm outline-none"
-      />
+    <div className="space-y-2">
+      <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">{label}</label>
+      <input value={value} onChange={(e) => onChange(e.target.value)} className="w-full bg-black border-2 border-white/10 rounded-2xl px-5 py-3 text-sm font-black text-white focus:border-[#9155FD] outline-none transition-all" />
     </div>
   );
 }
 
 function Select({ label, value, onChange, options }) {
   return (
-    <div>
-      <label className="text-sm font-medium text-gray-700">{label}</label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-xl border px-3 py-2 text-sm bg-white"
-      >
-        <option value="">None</option>
-        {options.map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.name}
-          </option>
-        ))}
+    <div className="space-y-2">
+      <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">{label}</label>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full bg-black border-2 border-white/10 rounded-2xl px-5 py-3 text-sm font-black text-white focus:border-[#4CC9F0] outline-none appearance-none cursor-pointer">
+        <option value="" className="bg-black text-white/20">NULL_SET</option>
+        {options.map((o) => <option key={o.id} value={o.id} className="bg-black text-white">{o.name.toUpperCase()}</option>)}
       </select>
     </div>
   );

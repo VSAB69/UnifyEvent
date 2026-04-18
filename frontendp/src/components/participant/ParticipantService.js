@@ -15,6 +15,9 @@ const ParticipantService = {
       `/secure/event-image/?key=${encodeURIComponent(imageKey)}`
     ),
 
+    // Add this inside the ParticipantService object in ParticipantService.js
+getEventById: (id) => appApiClient.get(`/events/browse/${id}/`),
+
   // ------------------------------------
   // SLOTS
   // ------------------------------------

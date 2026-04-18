@@ -1,169 +1,134 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Clock, Users } from "lucide-react";
+import { X, Clock, Calendar, CheckCircle2, ShoppingCart, Info } from "lucide-react";
 
-export default function SlotPickModal({
-  open,
-  onClose,
-  event,
-  participantsCount,
-  onPick,
-  fetchSlots,
-}) {
+export default function SlotPickModal({ open, onClose, event, participantsCount, onPick, fetchSlots }) {
   const [slots, setSlots] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
   const [loading, setLoading] = useState(false);
-
-  // Extract eventId to avoid ESLint dependency warning
-  const eventId = event?.id;
+  const [selectedSlot, setSelectedSlot] = useState(null);
 
   useEffect(() => {
-    if (!open || !eventId) return;
+    if (!open || !event?.id || loading) return;
 
+    let isMounted = true;
     const load = async () => {
       setLoading(true);
-      setSelectedId(null);
       try {
-        const res = await fetchSlots(eventId);
-        setSlots(res.data || []);
+        const res = await fetchSlots(event.id);
+        if (isMounted) setSlots(res.data || []);
+      } catch (err) {
+        console.error("Slot fetch failed", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     load();
-  }, [open, eventId, fetchSlots]);
+    return () => { isMounted = false; };
+  }, [open, event?.id, fetchSlots]);
+
+  useEffect(() => {
+    if (!open) setSelectedSlot(null);
+  }, [open]);
 
   if (!open) return null;
-
-  const selected = slots.find((s) => String(s.id) === String(selectedId));
 
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center px-4"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[120] bg-[#050505]/90 backdrop-blur-2xl flex items-center justify-center px-4"
       >
         <motion.div
-          initial={{ scale: 0.96, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.96, opacity: 0 }}
-          transition={{ duration: 0.25 }}
-          className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl p-8"
+          initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+          className="relative w-full max-w-2xl bg-[#111] border border-white/10 rounded-[3rem] shadow-2xl p-10 overflow-hidden"
         >
-          {/* CLOSE */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition"
-          >
-            <X className="w-5 h-5 text-gray-600" />
+          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent animate-pulse" />
+          
+          <button onClick={onClose} className="absolute top-8 right-8 text-white/30 hover:text-white transition">
+            <X size={20} />
           </button>
 
-          {/* HEADER */}
-          <div className="mb-6">
-            <p className="text-xs font-semibold tracking-widest uppercase text-purple-600 mb-1">
-              Step 3 of 3
-            </p>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Pick a Time Slot
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Select a slot that fits {participantsCount} participant
-              {participantsCount > 1 ? "s" : ""}
-            </p>
+          <div className="mb-8">
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-500">Timeline Selection</span>
+            <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white mt-2">Pick your Slot</h2>
           </div>
 
-          {/* SLOTS */}
-          {loading ? (
-            <div className="text-center py-12 text-gray-500">
-              Loading slots…
-            </div>
-          ) : slots.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              No slots available
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              {slots.map((s) => {
-                const canFit =
-                  s.unlimited_participants ||
-                  (s.available_participants ?? 0) >= participantsCount;
+          <div className="max-h-[40vh] overflow-y-auto pr-4 custom-scrollbar mb-8">
+            {loading ? (
+              <div className="py-20 text-center text-slate-500 font-black uppercase tracking-widest animate-pulse text-xs">Scanning Frequencies...</div>
+            ) : slots.length === 0 ? (
+              <div className="py-20 text-center text-slate-500 uppercase tracking-widest text-xs">No Nodes Available</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {slots.map((slot) => {
+                  const isUnlimited = slot.unlimited_participants;
+                  const left = slot.available_participants ?? 0;
+                  const isAvailable = isUnlimited || left >= participantsCount;
+                  const isSelected = selectedSlot?.id === slot.id;
 
-                const isSelected = String(s.id) === String(selectedId);
-
-                return (
-                  <motion.button
-                    key={s.id}
-                    whileHover={canFit ? { y: -3 } : {}}
-                    whileTap={canFit ? { scale: 0.97 } : {}}
-                    onClick={() =>
-                      canFit ? setSelectedId(String(s.id)) : null
-                    }
-                    className={`text-left p-4 rounded-xl border transition-all
-                      ${
-                        isSelected
-                          ? "border-purple-600 ring-2 ring-purple-200 bg-purple-50"
-                          : "border-gray-200 bg-white"
-                      }
-                      ${
-                        canFit
-                          ? "hover:border-purple-400"
-                          : "opacity-40 cursor-not-allowed"
+                  return (
+                    <motion.button
+                      key={slot.id}
+                      disabled={!isAvailable}
+                      onClick={() => setSelectedSlot(slot)}
+                      className={`p-5 rounded-2xl border text-left transition-all relative group ${
+                        isSelected 
+                          ? "bg-cyan-500/10 border-cyan-500 shadow-[0_0_20px_rgba(76,201,240,0.2)]" 
+                          : isAvailable 
+                            ? "bg-white/5 border-white/10 hover:border-white/30" 
+                            : "opacity-30 grayscale cursor-not-allowed border-white/5 bg-transparent"
                       }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
-                        <Clock className="w-4 h-4" />
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <div className={`p-2 rounded-lg ${isSelected ? "bg-cyan-500 text-black" : "bg-white/5 text-cyan-500"}`}>
+                          <Calendar size={16} />
+                        </div>
+                        {isSelected && <CheckCircle2 size={18} className="text-cyan-500" />}
                       </div>
 
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-900 text-sm">
-                          {s.date}
-                        </div>
-                        <div className="text-xs text-gray-600">
-                          {s.start_time} – {s.end_time}
-                        </div>
-
-                        <div className="mt-2 flex items-center gap-1 text-xs text-gray-600">
-                          <Users className="w-3.5 h-3.5" />
-                          {s.unlimited_participants
-                            ? "Unlimited capacity"
-                            : canFit
-                            ? `${s.available_participants} spots available`
-                            : `${s.available_participants} spots (not enough)`}
-                        </div>
+                      <p className="text-white font-black italic uppercase text-sm mb-1">{slot.date}</p>
+                      
+                      <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-4">
+                        <Clock size={12} /> {slot.start_time} — {slot.end_time}
                       </div>
-                    </div>
-                  </motion.button>
-                );
-              })}
-            </div>
-          )}
 
-          {/* ACTIONS */}
-          <div className="flex gap-3">
-            <button
+                      {/* 🚀 CAPACITY INDICATOR */}
+                      <div className={`flex items-center gap-1.5 text-[9px] font-black tracking-tighter uppercase px-2 py-1 rounded-md w-fit ${
+                        isUnlimited ? "bg-emerald-500/10 text-emerald-500" : 
+                        left <= 5 ? "bg-rose-500/10 text-rose-500" : "bg-white/5 text-slate-400"
+                      }`}>
+                        <Info size={10} />
+                        {isUnlimited ? "Unlimited Capacity" : `${left} Slots Remaining`}
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Action Footer */}
+          <div className="flex gap-4">
+            <button 
               onClick={onClose}
-              className="flex-1 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition"
+              className="flex-1 py-4 rounded-2xl border border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-white/5 transition"
             >
               Cancel
             </button>
-
             <motion.button
-              disabled={!selected}
-              onClick={() => onPick(selected)}
-              whileHover={selected ? { scale: 1.03 } : {}}
-              whileTap={selected ? { scale: 0.96 } : {}}
-              className={`flex-1 py-3 rounded-xl font-semibold transition shadow-md
-                ${
-                  selected
-                    ? "bg-purple-600 text-white hover:bg-purple-700"
-                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                }`}
+              disabled={!selectedSlot}
+              onClick={() => onPick(selectedSlot)}
+              whileHover={selectedSlot ? { scale: 1.02, boxShadow: "0_0_30px_rgba(76,201,240,0.3)" } : {}}
+              whileTap={selectedSlot ? { scale: 0.98 } : {}}
+              className={`flex-[2] py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all ${
+                selectedSlot 
+                  ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white" 
+                  : "bg-white/5 text-slate-600 cursor-not-allowed border border-white/5"
+              }`}
             >
-              Confirm Slot
+              <ShoppingCart size={16} />
+              Confirm & Add to Cart
             </motion.button>
           </div>
         </motion.div>

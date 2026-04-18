@@ -1,5 +1,12 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertCircle, CheckCircle } from "lucide-react";
 import { authenticated_user, login, logout, register } from "../api/endpoints";
@@ -87,6 +94,7 @@ function AlertModal({ open, onClose, title, message, type = "error" }) {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
 
   // Alert state
   const [alertOpen, setAlertOpen] = useState(false);
@@ -97,29 +105,38 @@ export const AuthProvider = ({ children }) => {
   });
 
   const nav = useNavigate();
+  const location = useLocation();
 
-  const showAlert = (title, message, type = "error") => {
+  const showAlert = useCallback((title, message, type = "error") => {
     setAlertConfig({ title, message, type });
     setAlertOpen(true);
-  };
+  }, []);
 
-  const get_authenticated_user = async () => {
+  const get_authenticated_user = useCallback(async () => {
     try {
       const fetchedUser = await authenticated_user();
       setUser(fetchedUser);
-    } catch {
+    } catch (err) {
+      console.warn("Session invalid or expired.");
       setUser(null);
+      // Only redirect if we are on a protected route
+      const publicRoutes = ["/login", "/register"];
+      if (!publicRoutes.includes(location.pathname)) {
+        nav("/login", { replace: true });
+      }
     } finally {
       setLoading(false);
+      setAuthChecked(true);
     }
-  };
+  }, [nav, location.pathname]);
 
   const loginUser = async (username, password) => {
     try {
+      setLoading(true);
       const data = await login(username, password);
       if (data && data.user) {
         setUser(data.user);
-        nav("/");
+        nav("/", { replace: true });
       }
     } catch (error) {
       console.error("Login failed:", error);
@@ -127,6 +144,8 @@ export const AuthProvider = ({ children }) => {
         "Login Failed",
         "Incorrect username or password. Please try again."
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -137,7 +156,7 @@ export const AuthProvider = ({ children }) => {
       console.error("Logout failed:", error);
     } finally {
       setUser(null);
-      nav("/login");
+      nav("/login", { replace: true });
     }
   };
 
@@ -157,6 +176,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
+      setLoading(true);
       const data = await register(username, email, password, role);
       if (data) {
         showAlert(
@@ -172,23 +192,32 @@ export const AuthProvider = ({ children }) => {
         "Registration Failed",
         "Error registering user. Please try again."
       );
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     get_authenticated_user();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      authChecked,
+      isAuthenticated: !!user,
+      loginUser,
+      logoutUser,
+      registerUser,
+      showAlert,
+    }),
+    [user, loading, authChecked, showAlert]
+  );
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        loginUser,
-        logoutUser,
-        registerUser,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
 
       {/* 🔔 GLOBAL AUTH ALERT */}
@@ -203,4 +232,11 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
+

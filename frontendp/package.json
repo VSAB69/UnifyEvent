@@ -15,6 +15,7 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.7.7",
     "framer-motion": "^12.23.24",
+    "gsap": "^3.15.0",
     "html2canvas": "^1.4.1",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.553.0",
