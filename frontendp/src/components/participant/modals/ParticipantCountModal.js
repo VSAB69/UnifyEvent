@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Users, Zap } from "lucide-react";
+import { X, Users} from "lucide-react";
 
 export default function ParticipantCountModal({ open, onClose, constraint, onChoose }) {
   const options = useMemo(() => {

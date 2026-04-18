@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Trash2,
@@ -33,11 +33,12 @@ export default function CartPage() {
   const [slotTargetItem, setSlotTargetItem] = useState(null);
   const [slotTeamCount, setSlotTeamCount] = useState(0);
 
-  useEffect(() => {
-    loadCart();
+  const showToast = useCallback((msg, kind = "success") => {
+    setToast({ open: true, message: msg, kind });
+    setTimeout(() => setToast((s) => ({ ...s, open: false })), 3500);
   }, []);
 
-  const loadCart = async () => {
+  const loadCart = useCallback(async () => {
     setLoading(true);
     try {
       const res = await ParticipantService.getCart();
@@ -47,12 +48,11 @@ export default function CartPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
-  const showToast = (msg, kind = "success") => {
-    setToast({ open: true, message: msg, kind });
-    setTimeout(() => setToast((s) => ({ ...s, open: false })), 3500);
-  };
+  useEffect(() => {
+    loadCart();
+  }, [loadCart]);
 
   const getConstraint = async (eventId) => {
     if (constraints[eventId] !== undefined) return constraints[eventId];
@@ -121,23 +121,6 @@ export default function CartPage() {
     } catch (err) {
       const backendMsg = err.response?.data?.email?.[0] || err.response?.data?.detail || "SYNC_FAILED";
       showToast(backendMsg.toUpperCase().replace(/\s/g, '_'), "error");
-    }
-  };
-
-  const handleRemoveParticipant = async (item, participant) => {
-    const c = await getConstraint(item.event);
-    if (!canEditCount(c)) return showToast("LOCKED_PROTOCOL", "error");
-    const newCount = item.participants_count - 1;
-    const err = validateCount(c, newCount);
-    if (err) return showToast(err, "error");
-
-    try {
-      await ParticipantService.deleteTempBooking(participant.id);
-      await ParticipantService.updateCartItem(item.id, { participants_count: newCount });
-      await loadCart();
-      showToast("UNIT_REMOVED", "success");
-    } catch (e) {
-      showToast("OP_FAILED", "error");
     }
   };
 
@@ -231,7 +214,6 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-[#F72585] py-16 px-4">
-      {/* Background Grids */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,#1a101a_0%,#050505_100%)] opacity-70" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:60px_60px]" />
@@ -239,7 +221,6 @@ export default function CartPage() {
 
       <div className="relative z-10 max-w-7xl mx-auto">
         <motion.header initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} className="mb-14">
-
           <h1 className="text-4xl md:text-8xl font-[1000] uppercase tracking-tighter leading-none">
             Cart <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F72585] via-[#9155FD] to-[#4CC9F0] italic">Page</span>
           </h1>
@@ -257,12 +238,10 @@ export default function CartPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-            {/* Left Column: Items */}
             <div className="lg:col-span-8 space-y-8">
               {cart.items.map((item) => (
                 <motion.div key={item.id} layout initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="bg-[#0a0a0a] border-2 border-white/10 rounded-3xl md:rounded-[40px] overflow-hidden group hover:border-[#F72585]/40 transition-all shadow-2xl">
                   <div className="p-6 md:p-10">
-                    {/* Header */}
                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-10">
                       <div>
                         <div className="flex items-center gap-2 text-[#4CC9F0] mb-3">
@@ -280,7 +259,6 @@ export default function CartPage() {
                       </div>
                     </div>
 
-                    {/* Editor Section */}
                     <div className="space-y-10 border-t-2 border-white/5 pt-10">
                       <div className="flex flex-col md:flex-row md:items-end gap-6">
                         <div className="flex-1 w-full">
@@ -301,7 +279,6 @@ export default function CartPage() {
                         </div>
                       </div>
 
-                      {/* Participant Fields */}
                       <div className="space-y-4">
                         <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] block">ASSIGNED_IDENTITIES</span>
                         {item.temp_participants.map((p) => (
@@ -314,8 +291,6 @@ export default function CartPage() {
                         ))}
                       </div>
 
-                      {/* FIXED: Time Slot UI Showing Actual Time */}
-                      {/* Temporal Slot UI */}
                       <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 bg-white/[0.03] p-6 sm:p-8 rounded-3xl md:rounded-[30px] border-2 border-white/5">
                         <div className="flex items-center gap-4 sm:gap-6">
                           <div className="p-3 sm:p-4 bg-white/5 rounded-2xl text-[#9155FD] shadow-inner"><Calendar size={24} className="stroke-[2.5px]" /></div>
@@ -348,7 +323,6 @@ export default function CartPage() {
               ))}
             </div>
 
-            {/* Right Column: Checkout Summary */}
             <div className="lg:col-span-4">
               <div className="sticky top-12 space-y-8">
                 <div className="bg-[#0a0a0a] border-2 border-white/10 rounded-3xl md:rounded-[45px] p-6 md:p-10 shadow-2xl relative overflow-hidden">
@@ -396,7 +370,6 @@ export default function CartPage() {
         )}
       </div>
 
-      {/* Modals */}
       {addTargetItem && (
         <ParticipantDetailsModal
           open={addModalOpen}
@@ -416,7 +389,6 @@ export default function CartPage() {
         />
       )}
 
-      {/* Futuristic Toast */}
       <AnimatePresence>
         {toast.open && (
           <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className={`fixed right-10 bottom-10 z-[100] px-8 py-5 rounded-2xl border-2 font-[1000] text-[11px] tracking-[0.3em] uppercase flex items-center gap-4 bg-black shadow-2xl ${toast.kind === "success" ? "border-[#00FF41] text-[#00FF41]" : "border-[#F72585] text-[#F72585]"}`}>

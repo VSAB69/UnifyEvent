@@ -203,18 +203,26 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const value = useMemo(
-    () => ({
-      user,
-      loading,
-      authChecked,
-      isAuthenticated: !!user,
-      loginUser,
-      logoutUser,
-      registerUser,
-      showAlert,
-    }),
-    [user, loading, authChecked, showAlert]
-  );
+  () => ({
+    user,
+    loading,
+    authChecked,
+    isAuthenticated: !!user,
+    loginUser,
+    logoutUser,
+    registerUser,
+    showAlert,
+  }),
+  [
+    user,
+    loading,
+    authChecked,
+    showAlert,
+    loginUser,
+    logoutUser,
+    registerUser,
+  ]
+);
 
   return (
     <AuthContext.Provider value={value}>

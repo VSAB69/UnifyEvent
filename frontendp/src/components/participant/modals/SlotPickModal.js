@@ -8,24 +8,28 @@ export default function SlotPickModal({ open, onClose, event, participantsCount,
   const [selectedSlot, setSelectedSlot] = useState(null);
 
   useEffect(() => {
-    if (!open || !event?.id || loading) return;
+  if (!open || !event?.id) return;
 
-    let isMounted = true;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const res = await fetchSlots(event.id);
-        if (isMounted) setSlots(res.data || []);
-      } catch (err) {
-        console.error("Slot fetch failed", err);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
+  let isMounted = true;
 
-    load();
-    return () => { isMounted = false; };
-  }, [open, event?.id, fetchSlots]);
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await fetchSlots(event.id);
+      if (isMounted) setSlots(res.data || []);
+    } catch (err) {
+      console.error("Slot fetch failed", err);
+    } finally {
+      if (isMounted) setLoading(false);
+    }
+  };
+
+  load();
+
+  return () => {
+    isMounted = false;
+  };
+}, [open, event?.id, fetchSlots]);
 
   useEffect(() => {
     if (!open) setSelectedSlot(null);

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/useAuth";
 import { useNavigate } from "react-router-dom";
-import { User, Lock, Mail, ArrowRight, ShieldCheck, Activity } from "lucide-react"; 
+import { User, Mail, ArrowRight, ShieldCheck, Activity } from "lucide-react"; 
 
 export default function Register() {
   const [username, setUsername] = useState("");
