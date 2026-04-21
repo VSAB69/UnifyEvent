@@ -6,4 +6,9 @@ urlpatterns = [
     path("refresh/", MobileTokenRefreshView.as_view()),
     path("logout/", MobileLogoutView.as_view()),
     path("me/", MobileMeView.as_view()),
+
+    #Google OAuth
+    path("google/", MobileGoogleLoginView.as_view()),
+    path("set-username/", MobileSetUsernameView.as_view()),
+    path("set-password/", MobileSetPasswordView.as_view()),
 ]
