@@ -1,3 +1,5 @@
+// context/useAuth.js
+
 import React, {
   createContext,
   useContext,
@@ -9,12 +11,19 @@ import React, {
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertCircle, CheckCircle } from "lucide-react";
-import { authenticated_user, login, logout, register } from "../api/endpoints";
+
+import {
+  authenticated_user,
+  login,
+  logout,
+  register,
+  googleLogin,
+} from "../api/endpoints";
 
 const AuthContext = createContext();
 
 /* ------------------------------------------------------------------ */
-/* 🔔 ALERT MODAL (LOCAL TO THIS FILE) */
+/* 🔔 ALERT MODAL */
 /* ------------------------------------------------------------------ */
 function AlertModal({ open, onClose, title, message, type = "error" }) {
   if (!open) return null;
@@ -23,28 +32,15 @@ function AlertModal({ open, onClose, title, message, type = "error" }) {
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[999] bg-black/40 backdrop-blur-sm flex items-center justify-center px-4"
-      >
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6"
-        >
-          {/* CLOSE */}
+      <motion.div className="fixed inset-0 z-[999] bg-black/40 backdrop-blur-sm flex items-center justify-center px-4">
+        <motion.div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition"
+            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100"
           >
             <X className="w-5 h-5 text-gray-600" />
           </button>
 
-          {/* ICON */}
           <div className="flex justify-center mb-4">
             <div
               className={`w-12 h-12 flex items-center justify-center rounded-full ${
@@ -61,22 +57,18 @@ function AlertModal({ open, onClose, title, message, type = "error" }) {
             </div>
           </div>
 
-          {/* CONTENT */}
           <h3 className="text-xl font-semibold text-center text-gray-900">
             {title}
           </h3>
           <p className="mt-2 text-sm text-center text-gray-600">{message}</p>
 
-          {/* ACTION */}
           <div className="mt-6">
             <motion.button
               onClick={onClose}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              className={`w-full py-2.5 rounded-xl font-semibold transition shadow-md ${
+              className={`w-full py-2.5 rounded-xl font-semibold ${
                 isSuccess
-                  ? "bg-green-600 text-white hover:bg-green-700"
-                  : "bg-purple-600 text-white hover:bg-purple-700"
+                  ? "bg-green-600 text-white"
+                  : "bg-purple-600 text-white"
               }`}
             >
               OK
@@ -96,7 +88,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
 
-  // Alert state
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertConfig, setAlertConfig] = useState({
     title: "",
@@ -112,14 +103,38 @@ export const AuthProvider = ({ children }) => {
     setAlertOpen(true);
   }, []);
 
+  /* ------------------------------------------------------------------ */
+  /* 🔍 SESSION CHECK */
+  /* ------------------------------------------------------------------ */
   const get_authenticated_user = useCallback(async () => {
     try {
       const fetchedUser = await authenticated_user();
       setUser(fetchedUser);
-    } catch (err) {
-      console.warn("Session invalid or expired.");
+
+      if (!fetchedUser) return;
+
+      // 🔥 USERNAME FLOW
+      if (
+        fetchedUser.needs_username &&
+        location.pathname !== "/set-username"
+      ) {
+        nav("/set-username", { replace: true });
+        return;
+      }
+
+      // 🔥 PASSWORD FLOW
+      if (
+        !fetchedUser.has_password &&
+        !fetchedUser.needs_username &&
+        location.pathname !== "/set-password"
+      ) {
+        nav("/set-password", { replace: true });
+        return;
+      }
+
+    } catch {
       setUser(null);
-      // Only redirect if we are on a protected route
+
       const publicRoutes = ["/login", "/register"];
       if (!publicRoutes.includes(location.pathname)) {
         nav("/login", { replace: true });
@@ -130,77 +145,129 @@ export const AuthProvider = ({ children }) => {
     }
   }, [nav, location.pathname]);
 
-  const loginUser = useCallback(async (username, password) => {
-    try {
-      setLoading(true);
-      const data = await login(username, password);
-      if (data && data.user) {
-        setUser(data.user);
-        nav("/", { replace: true });
-      }
-    } catch (error) {
-      console.error("Login failed:", error);
-      showAlert(
-        "Login Failed",
-        "Incorrect username or password. Please try again."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [nav, showAlert]);
+  /* ------------------------------------------------------------------ */
+  /* 🔐 EMAIL LOGIN */
+  /* ------------------------------------------------------------------ */
+  const loginUser = useCallback(
+    async (email, password) => {
+      try {
+        setLoading(true);
 
+        const data = await login(email, password);
+
+        if (data?.user) {
+          setUser(data.user);
+
+          if (data.user.needs_username) {
+            nav("/set-username", { replace: true });
+          } else if (!data.user.has_password) {
+            nav("/set-password", { replace: true });
+          } else {
+            nav("/", { replace: true });
+          }
+        }
+      } catch (error) {
+        const msg =
+          error?.response?.data?.detail ||
+          "Invalid email or password";
+
+        showAlert("Login Failed", msg);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [nav, showAlert]
+  );
+
+  /* ------------------------------------------------------------------ */
+  /* 🔐 GOOGLE LOGIN */
+  /* ------------------------------------------------------------------ */
+  const googleLoginUser = useCallback(
+    async (id_token) => {
+      try {
+        setLoading(true);
+
+        await googleLogin(id_token);
+
+        const user = await authenticated_user();
+
+        if (!user) throw new Error("User fetch failed");
+
+        setUser(user);
+
+        if (user.needs_username) {
+          nav("/set-username", { replace: true });
+        } else if (!user.has_password) {
+          nav("/set-password", { replace: true });
+        } else {
+          nav("/", { replace: true });
+        }
+      } catch (error) {
+        const msg =
+          error?.response?.data?.message ||
+          "Google login failed. Try again.";
+
+        showAlert("Google Login Failed", msg);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [nav, showAlert]
+  );
+
+  /* ------------------------------------------------------------------ */
+  /* 📝 REGISTER */
+  /* ------------------------------------------------------------------ */
+  const registerUser = useCallback(
+    async (email, password, confirm_password, role = "participant") => {
+      if (password !== confirm_password) {
+        showAlert("Password Mismatch", "Passwords do not match.");
+        return;
+      }
+
+      try {
+        setLoading(true);
+
+        await register(email, password, role);
+
+        showAlert(
+          "Registration Successful",
+          "You can now log in.",
+          "success"
+        );
+
+        nav("/login");
+      } catch {
+        showAlert("Registration Failed", "Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [nav, showAlert]
+  );
+
+  /* ------------------------------------------------------------------ */
+  /* 🚪 LOGOUT */
+  /* ------------------------------------------------------------------ */
   const logoutUser = useCallback(async () => {
     try {
       await logout();
-    } catch (error) {
-      console.error("Logout failed:", error);
     } finally {
       setUser(null);
       nav("/login", { replace: true });
     }
   }, [nav]);
 
-  const registerUser = useCallback(async (
-    username,
-    email,
-    password,
-    confirm_password,
-    role = "participant"
-  ) => {
-    if (password !== confirm_password) {
-      showAlert(
-        "Password Mismatch",
-        "Passwords do not match. Please re-enter."
-      );
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const data = await register(username, email, password, role);
-      if (data) {
-        showAlert(
-          "Registration Successful",
-          "Your account has been created. You can now log in.",
-          "success"
-        );
-        nav("/login");
-      }
-    } catch (error) {
-      console.error("Registration failed:", error);
-      showAlert(
-        "Registration Failed",
-        "Error registering user. Please try again."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [nav, showAlert]);
-
+  /* ------------------------------------------------------------------ */
+  /* INIT */
+  /* ------------------------------------------------------------------ */
   useEffect(() => {
     get_authenticated_user();
   }, [get_authenticated_user]);
 
+  /* ------------------------------------------------------------------ */
+  /* CONTEXT */
+  /* ------------------------------------------------------------------ */
   const value = useMemo(
     () => ({
       user,
@@ -208,6 +275,7 @@ export const AuthProvider = ({ children }) => {
       authChecked,
       isAuthenticated: !!user,
       loginUser,
+      googleLoginUser,
       logoutUser,
       registerUser,
       showAlert,
@@ -216,10 +284,11 @@ export const AuthProvider = ({ children }) => {
       user,
       loading,
       authChecked,
-      showAlert,
       loginUser,
+      googleLoginUser,
       logoutUser,
       registerUser,
+      showAlert,
     ]
   );
 
@@ -227,7 +296,6 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider value={value}>
       {children}
 
-      {/* 🔔 GLOBAL AUTH ALERT */}
       <AlertModal
         open={alertOpen}
         onClose={() => setAlertOpen(false)}
@@ -239,6 +307,9 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+/* ------------------------------------------------------------------ */
+/* 🔗 HOOK */
+/* ------------------------------------------------------------------ */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

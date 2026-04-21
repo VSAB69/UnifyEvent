@@ -10,13 +10,18 @@ import { ChakraProvider } from "@chakra-ui/react";
 
 import { AuthProvider } from "./context/useAuth";
 import PrivateRoute from "./components/private_route";
+
+// 🔥 ROUTES
+import Login from "./routes/login";
+import Register from "./routes/register";
+import SetUsername from "./routes/SetUsername"; // ✅ NEW
+
+// 🔥 COMPONENTS
 import ProfilePage from "./components/home/ProfilePage";
 import AdminCheckInPage from "./components/admin/AdminCheckInPage";
 import NavBar from "./components/NavBar";
 import MyBookings from "./components/participant/MyBookings";
 import TicketPage from "./components/participant/TicketPage";
-import Login from "./routes/login";
-import Register from "./routes/register";
 import { Home } from "./components/home/Home";
 import EventGrid from "./components/admin/EventGrid";
 import CartPage from "./components/participant/CartPage";
@@ -25,23 +30,48 @@ import ParentEventsPage from "./components/participant/ParentEventsPage";
 import ParentEventEventsPage from "./components/participant/ParentEventEventsPage";
 import BookingSuccessPage from "./components/participant/BookingSuccessPage";
 import EventDetailsPage from "./components/participant/EventDetailsPage";
+import SetPassword from "./routes/SetPassword";
 
 function App() {
-  // Define role groups for better scalability
+  // 🔥 ROLE GROUPS
   const allUsers = useMemo(() => ["admin", "participant", "organiser"], []);
   const adminOrganiser = useMemo(() => ["admin", "organiser"], []);
-  const participantsOnly = useMemo(() => ["participant", "organiser", "admin"], []); // Usually participants + staff
+  const participantsOnly = useMemo(
+    () => ["participant", "organiser", "admin"],
+    []
+  );
 
   return (
     <ChakraProvider>
       <Router>
         <AuthProvider>
           <Routes>
-            {/* ---------- PUBLIC ROUTES ---------- */}
+
+            {/* ───────── PUBLIC ROUTES ───────── */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
-            {/* ---------- PRIVATE ROUTES ---------- */}
+            {/* ───────── USERNAME SETUP (IMPORTANT) ───────── */}
+            <Route
+              path="/set-username"
+              element={
+                <PrivateRoute allowedRoles={allUsers}>
+                  <SetUsername />
+                </PrivateRoute>
+              }
+            />
+
+<Route
+  path="/set-password"
+  element={
+    <PrivateRoute allowedRoles={allUsers}>
+      <SetPassword />
+    </PrivateRoute>
+  }
+/>
+
+            {/* ───────── PRIVATE ROUTES ───────── */}
+
             <Route
               path="/home"
               element={
@@ -50,6 +80,7 @@ function App() {
                 </PrivateRoute>
               }
             />
+            
 
             <Route
               path="/profile"
@@ -150,11 +181,12 @@ function App() {
               }
             />
 
-            {/* Root Redirect */}
+            {/* ───────── ROOT REDIRECT ───────── */}
             <Route path="/" element={<Navigate to="/home" replace />} />
-            
-            {/* Catch All - 404/Redirect */}
+
+            {/* ───────── CATCH ALL ───────── */}
             <Route path="*" element={<Navigate to="/home" replace />} />
+
           </Routes>
         </AuthProvider>
       </Router>
